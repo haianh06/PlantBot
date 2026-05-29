@@ -47,7 +47,7 @@ Start-Sleep -Seconds 3
 
 # ─── Start Frontend ─────────────────────────────────────────
 Write-Host "Starting Frontend (Vite)..." -ForegroundColor Cyan
-$frontendProc = Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command npm.cmd run dev" -WorkingDirectory (Join-Path $projectRoot "frontend") -PassThru -NoNewWindow
+$frontendProc = Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command npm.cmd run dev -- --host 0.0.0.0" -WorkingDirectory (Join-Path $projectRoot "frontend") -PassThru -NoNewWindow
 $processes += $frontendProc
 
 # ─── Completion Message ─────────────────────────────────────
