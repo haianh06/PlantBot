@@ -1,0 +1,79 @@
+/* Sidebar.css */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sidebar__section {
+  padding: 4px 0;
+}
+
+.sidebar__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+/* Connection Info styles within sidebar */
+.connection-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.connection-info__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.connection-info__label {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.connection-info__value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.connection-info__ports {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.connection-info__port-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.connection-info__port-tag {
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.connection-info__port-tag--active {
+  background: var(--accent-green-dim);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: var(--accent-green);
+}
+
+.connection-info__reconnect {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+}

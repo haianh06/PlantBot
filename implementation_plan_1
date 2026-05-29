@@ -1,0 +1,324 @@
+# PlantBot — Hệ Thống Chăm Sóc Cây Tự Động
+
+## Tổng Quan
+
+Xây dựng hệ thống IoT chăm sóc cây tự động gồm 3 tầng:
+- **Firmware** (Arduino Nano): Đọc cảm biến + điều khiển relay qua Serial USB
+- **Backend** (FastAPI): Xử lý logic, giao tiếp Arduino, lưu dữ liệu CSV, stream camera
+- **Frontend** (React + Vite): Dashboard điều khiển + giám sát real-time
+
+### Sơ đồ phần cứng
+
+```
+Arduino Nano (USB Serial) ─── Máy tính (FastAPI Backend)
+  ├── D4  → DHT22 (nhiệt độ + độ ẩm không khí)
+  ├── A0  → Capacitive Soil Moisture (độ ẩm đất)
+  ├── D5  → Relay 1 → Máy bơm nước
+  └── D6  → Relay 2 → Phun sương
+```
+
+### Kiến trúc hệ thống
+
+```mermaid
+graph LR
+    subgraph Hardware
+        A[Arduino Nano]
+        S1[DHT22 - D4]
+        S2[Soil Moisture - A0]
+        R1[Relay 1 - D5 - Bơm nước]
+        R2[Relay 2 - D6 - Phun sương]
+    end
+
+    subgraph Backend["FastAPI Backend"]
+        SER[Serial Service]
+        CAM[Camera Service]
+        DB[CSV Storage]
+        API[REST API]
+    end
+
+    subgraph Frontend["React Dashboard"]
+        DASH[Dashboard]
+        CTRL[Controls]
+        SIDE[Sidebar]
+        CVIEW[Camera View]
+    end
+
+    S1 & S2 --> A
+    A <--> R1 & R2
+    A <-->|USB Serial| SER
+    SER --> DB
+    SER --> API
+    CAM -->|Webcam / Laptop cam| API
+    API <-->|HTTP / WebSocket| DASH & CTRL & SIDE & CVIEW
+```
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Serial Protocol**: Arduino sẽ gửi dữ liệu dạng JSON qua Serial (ví dụ: `{"temperature":28.5,"humidity":65.2,"soil_moisture":42}`). Backend parse và lưu vào CSV. Relay được điều khiển bằng lệnh gửi từ backend xuống Arduino (ví dụ: `PUMP_ON`, `PUMP_OFF`, `MIST_ON`, `MIST_OFF`). Bạn có đồng ý protocol này không?
+
+> [!IMPORTANT]
+> **Camera**: Hệ thống hỗ trợ tối đa 2 camera (laptop cam + USB webcam). Frontend cho phép bật/tắt từng camera độc lập hoặc xem cả 2 cùng lúc. Stream qua MJPEG endpoint từ backend.
+
+> [!WARNING]
+> **Relay Logic**: Relay module thường dùng logic **Active LOW** (LOW = ON, HIGH = OFF). Code firmware sẽ dùng Active LOW làm mặc định. Nếu relay module của bạn dùng Active HIGH, cần thông báo để điều chỉnh.
+
+---
+
+## Proposed Changes
+
+### 1. Firmware — Arduino Nano
+
+> Code Arduino: đọc cảm biến, gửi dữ liệu JSON qua Serial, nhận lệnh điều khiển relay.
+
+#### [MODIFY] [SoilSensor.h](file:///c:/Documents/Project/PlantBot/firmware/src/SoilSensor.h)
+- Khai báo class `SoilSensor` với:
+  - Constructor nhận analog pin
+  - `readRaw()` → giá trị ADC thô (0–1023)
+  - `readPercent()` → quy đổi ra % (0–100%)
+  - Hằng số calibration `DRY_VALUE`, `WET_VALUE`
+
+#### [MODIFY] [SoilSensor.cpp](file:///c:/Documents/Project/PlantBot/firmware/src/SoilSensor.cpp)
+- Implement các method của `SoilSensor`
+- Map giá trị ADC sang phần trăm (capacitive sensor: giá trị cao = khô)
+
+#### [MODIFY] [MyIrrigationPump.h](file:///c:/Documents/Project/PlantBot/firmware/lib/MyIrrigationPump/MyIrrigationPump.h)
+- Class `RelayController` quản lý relay:
+  - Constructor nhận pin + active logic (LOW/HIGH)
+  - `turnOn()` / `turnOff()` / `isOn()` / `toggle()`
+
+#### [MODIFY] [MyIrrigationPump.cpp](file:///c:/Documents/Project/PlantBot/firmware/lib/MyIrrigationPump/MyIrrigationPump.cpp)
+- Implement relay control logic
+
+#### [NEW] [main.ino](file:///c:/Documents/Project/PlantBot/firmware/src/main.ino)
+- Setup: Serial 9600 baud, init sensors & relays
+- Loop:
+  - Đọc DHT22, soil moisture mỗi 2 giây
+  - Gửi JSON qua Serial: `{"temperature":X,"humidity":Y,"soil_moisture":Z,"pump":true/false,"mist":true/false}`
+  - Nhận lệnh Serial: `PUMP_ON`, `PUMP_OFF`, `MIST_ON`, `MIST_OFF`, `STATUS`
+  - Parse và thực thi lệnh
+
+---
+
+### 2. Backend — FastAPI
+
+> Kiến trúc: App → Routers → Services → Data layer (CSV)
+
+#### [NEW] [__init__.py](file:///c:/Documents/Project/PlantBot/backend/app/__init__.py)
+- Package init
+
+#### [NEW] [main.py](file:///c:/Documents/Project/PlantBot/backend/app/main.py)
+- Khởi tạo FastAPI app
+- Mount CORS middleware (cho React frontend)
+- Include routers: `sensor_router`, `pump_router`, `camera_router`, `system_router`
+- Startup/shutdown events: kết nối/ngắt Serial, khởi tạo camera
+- Serve static files nếu cần
+
+#### [NEW] [config.py](file:///c:/Documents/Project/PlantBot/backend/app/config.py)
+- Cấu hình tập trung:
+  - `SERIAL_PORT` (auto-detect hoặc chỉ định)
+  - `SERIAL_BAUDRATE` = 9600
+  - `CSV_FILE_PATH`
+  - `SENSOR_READ_INTERVAL` = 2 (giây)
+  - `CAMERA_INDICES` = [0, 1]
+
+#### [NEW] [models.py](file:///c:/Documents/Project/PlantBot/backend/app/models.py)
+- Pydantic schemas:
+  - `SensorData`: temperature, humidity, soil_moisture, timestamp
+  - `PumpCommand`: device (pump/mist), action (on/off)
+  - `PumpStatus`: pump_on, mist_on
+  - `SystemInfo`: serial_port, is_connected, available_ports, cameras
+  - `CameraConfig`: camera_index, is_active
+
+#### [MODIFY] [sensor_routes.py](file:///c:/Documents/Project/PlantBot/backend/app/api/sensor_routes.py)
+- `GET /api/sensors/current` → dữ liệu cảm biến mới nhất
+- `GET /api/sensors/history?limit=100` → lịch sử dữ liệu từ CSV
+- `GET /api/sensors/export` → download file CSV
+- `WebSocket /ws/sensors` → stream real-time sensor data
+
+#### [MODIFY] [pump_routes.py](file:///c:/Documents/Project/PlantBot/backend/app/api/pump_routes.py)
+- `POST /api/pump/control` → điều khiển bơm/phun sương (body: `PumpCommand`)
+- `GET /api/pump/status` → trạng thái hiện tại của relay
+
+#### [NEW] [camera_routes.py](file:///c:/Documents/Project/PlantBot/backend/app/api/camera_routes.py)
+- `GET /api/camera/stream/{camera_index}` → MJPEG stream
+- `GET /api/camera/list` → danh sách camera khả dụng
+- `POST /api/camera/toggle/{camera_index}` → bật/tắt camera
+
+#### [NEW] [system_routes.py](file:///c:/Documents/Project/PlantBot/backend/app/api/system_routes.py)
+- `GET /api/system/info` → thông tin kết nối Serial, camera
+- `GET /api/system/ports` → danh sách cổng COM khả dụng
+- `POST /api/system/connect` → kết nối/ngắt kết nối Arduino
+
+#### [NEW] [serial_service.py](file:///c:/Documents/Project/PlantBot/backend/app/services/serial_service.py)
+- Class `SerialService` (Singleton):
+  - `connect(port, baudrate)` / `disconnect()`
+  - `send_command(cmd)` → gửi lệnh xuống Arduino
+  - `read_sensor_data()` → đọc JSON từ Serial
+  - Background thread đọc liên tục từ Serial
+  - Thread-safe queue cho dữ liệu sensor
+
+#### [NEW] [camera_service.py](file:///c:/Documents/Project/PlantBot/backend/app/services/camera_service.py)
+- Class `CameraService`:
+  - Quản lý multiple cameras (OpenCV VideoCapture)
+  - `start_camera(index)` / `stop_camera(index)`
+  - `get_frame(index)` → capture frame JPEG
+  - `generate_mjpeg_stream(index)` → async generator cho StreamingResponse
+  - `list_available_cameras()` → scan cameras khả dụng
+
+#### [NEW] [csv_service.py](file:///c:/Documents/Project/PlantBot/backend/app/services/csv_service.py)
+- Class `CSVService`:
+  - `save_record(sensor_data)` → append vào CSV
+  - `get_history(limit)` → đọc N dòng cuối
+  - `get_file_path()` → đường dẫn để export/download
+  - Auto-create CSV header nếu file chưa tồn tại
+  - CSV format: `timestamp,temperature,humidity,soil_moisture,pump_status,mist_status`
+
+#### [MODIFY] [automation.py](file:///c:/Documents/Project/PlantBot/backend/app/services/automation.py)
+- Để trống (placeholder cho phase tự động hóa sau)
+- Comment giải thích mục đích tương lai
+
+#### [MODIFY] [time_helper.py](file:///c:/Documents/Project/PlantBot/backend/app/utils/time_helper.py)
+- `get_timestamp()` → ISO format timestamp
+- `format_duration(seconds)` → hiển thị thời gian dễ đọc
+
+#### [MODIFY] [__init__.py](file:///c:/Documents/Project/PlantBot/backend/app/utils/__init__.py)
+- Export utility functions
+
+---
+
+### 3. Frontend — React (Vite)
+
+> Khởi tạo project Vite + React trong thư mục `frontend/`. Dùng vanilla CSS với design system premium.
+
+#### Khởi tạo project
+
+Xóa nội dung cũ trong `frontend/` (chỉ có `components/` trống) và khởi tạo Vite React project mới.
+
+#### Cấu trúc thư mục frontend
+
+```
+frontend/
+├── index.html
+├── package.json
+├── vite.config.js
+├── public/
+├── src/
+│   ├── main.jsx              # Entry point
+│   ├── App.jsx                # Root component + Layout
+│   ├── App.css                # Global styles + design system
+│   ├── api/
+│   │   └── client.js          # API client (fetch wrapper)
+│   ├── hooks/
+│   │   ├── useSensorData.js   # WebSocket hook cho sensor real-time
+│   │   ├── usePumpControl.js  # Hook điều khiển bơm/phun sương
+│   │   └── useCameras.js      # Hook quản lý cameras
+│   ├── components/
+│   │   ├── Dashboard/
+│   │   │   ├── Dashboard.jsx      # Dashboard chính
+│   │   │   ├── Dashboard.css
+│   │   │   ├── SensorCard.jsx     # Card hiển thị 1 metric
+│   │   │   ├── SensorCard.css
+│   │   │   ├── SensorChart.jsx    # Biểu đồ lịch sử
+│   │   │   └── SensorChart.css
+│   │   ├── Controls/
+│   │   │   ├── PumpControl.jsx    # Nút bật/tắt bơm + phun sương
+│   │   │   └── PumpControl.css
+│   │   ├── Sidebar/
+│   │   │   ├── Sidebar.jsx        # Sidebar: kết nối + camera
+│   │   │   ├── Sidebar.css
+│   │   │   ├── ConnectionInfo.jsx # Thông tin cổng kết nối
+│   │   │   └── CameraView.jsx     # Camera viewer (1 hoặc 2 cam)
+│   │   └── common/
+│   │       ├── StatusBadge.jsx    # Badge trạng thái (online/offline)
+│   │       └── ToggleSwitch.jsx   # Switch bật/tắt reusable
+│   └── utils/
+│       └── formatters.js          # Format số, thời gian
+```
+
+#### Design System
+
+- **Color Palette**: Dark theme với accent xanh lá (plant theme)
+  - Background: `#0a0f1a` → `#111827`
+  - Cards: `#1a2332` với glassmorphism
+  - Primary accent: `#22c55e` (green-500)
+  - Secondary: `#06b6d4` (cyan-500)
+  - Danger: `#ef4444` (red-500)
+- **Typography**: Google Font "Inter" (clean, modern)
+- **Effects**: Glassmorphism cards, subtle glow animations, smooth transitions
+- **Responsive**: Flexbox/Grid layout, sidebar collapsible
+
+#### Dashboard Layout
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  🌿 PlantBot                               [Export CSV] │
+├──────────┬──────────────────────────────────────────────┤
+│          │  ┌──────┐ ┌──────┐ ┌──────┐                 │
+│ SIDEBAR  │  │ Temp │ │ Humi │ │ Soil │    SENSOR CARDS  │
+│          │  │ 28°C │ │  65% │ │  42% │                 │
+│ ──────── │  └──────┘ └──────┘ └──────┘                 │
+│ Kết nối  │                                              │
+│ COM3     │  ┌──────────────────────────┐                │
+│ 9600baud │  │    BIỂU ĐỒ LỊCH SỬ      │                │
+│ ●Online  │  │    (Line chart)          │                │
+│          │  └──────────────────────────┘                │
+│ ──────── │                                              │
+│ Camera   │  ┌─────────┐  ┌─────────┐                   │
+│ [🔘] Cam1│  │  💧 BƠM  │  │  🌫️ SƯƠNG│   PUMP CONTROLS │
+│ [🔘] Cam2│  │  [BẬT]  │  │  [TẮT]  │                  │
+│          │  └─────────┘  └─────────┘                   │
+│ ┌──────┐ │                                              │
+│ │Camera│ │                                              │
+│ │ View │ │                                              │
+│ └──────┘ │                                              │
+└──────────┴──────────────────────────────────────────────┘
+```
+
+---
+
+### 4. File gốc project
+
+#### [MODIFY] [main.py](file:///c:/Documents/Project/PlantBot/main.py)
+- Chuyển thành script khởi chạy backend: `uvicorn backend.app.main:app`
+
+#### [MODIFY] [pyproject.toml](file:///c:/Documents/Project/PlantBot/pyproject.toml)
+- Thêm dependencies: fastapi, uvicorn, pyserial, opencv-python, pydantic
+
+#### [MODIFY] [README.md](file:///c:/Documents/Project/PlantBot/README.md)
+- Cập nhật hướng dẫn cài đặt và chạy project đầy đủ
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+1. **Backend khởi chạy**: `uvicorn backend.app.main:app --reload` — không lỗi
+2. **Frontend khởi chạy**: `cd frontend && npm run dev` — không lỗi
+3. **API test**: Truy cập `http://localhost:8000/docs` — Swagger UI hiển thị đầy đủ endpoints
+4. **Frontend UI**: Truy cập `http://localhost:5173` — Dashboard render đúng layout
+
+### Manual Verification
+
+1. Cắm Arduino Nano → Backend auto-detect COM port
+2. Sensor data hiển thị real-time trên Dashboard
+3. Bấm nút BƠM → relay D5 chuyển trạng thái
+4. Bấm nút SƯƠNG → relay D6 chuyển trạng thái
+5. Camera laptop hiển thị trong Sidebar
+6. Export CSV download file đúng format
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Relay Active LOW hay HIGH?** Hầu hết relay module phổ biến dùng Active LOW (kéo pin xuống LOW để bật relay). Nếu module của bạn khác, hãy cho biết.
+
+> [!NOTE]
+> **Soil Moisture Calibration**: Cảm biến capacitive cần calibrate giá trị `DRY` và `WET`. Giá trị mặc định: DRY=520, WET=260. Bạn có thể điều chỉnh sau qua config. Bạn đã calibrate chưa hay để giá trị mặc định?
+
+> [!NOTE]
+> **COM Port**: Backend sẽ tự động scan và liệt kê tất cả COM port khả dụng. Bạn có biết Arduino Nano của mình đang ở COM port nào không? (có thể kiểm tra trong Device Manager)

@@ -1,0 +1,86 @@
+/* SensorCard.css */
+
+.sensor-card {
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.sensor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--card-accent) 20%, transparent);
+  border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
+}
+
+/* Subtle glow background */
+.sensor-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, var(--card-accent-dim) 0%, transparent 70%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sensor-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.sensor-card__icon {
+  font-size: 1.25rem;
+}
+
+.sensor-card__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sensor-card__value-container {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.sensor-card__value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--card-accent);
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.sensor-card__unit {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+/* Progress bar */
+.sensor-card__progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.sensor-card__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--card-accent), color-mix(in srgb, var(--card-accent) 60%, white));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}

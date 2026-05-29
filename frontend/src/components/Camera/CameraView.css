@@ -1,0 +1,103 @@
+/* CameraView.css */
+
+.camera-view__toggles {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.camera-view__toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.camera-view__body {
+  padding: 0 !important;
+}
+
+/* Placeholder khi camera tắt */
+.camera-view__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.camera-view__placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.camera-view__placeholder p {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.camera-view__placeholder-hint {
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* Stream area */
+.camera-view__streams {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.camera-view__streams--dual {
+  grid-template-columns: 1fr 1fr;
+}
+
+.camera-view__stream-item {
+  position: relative;
+  background: #000;
+  min-height: 200px;
+}
+
+.camera-view__stream-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  z-index: 2;
+}
+
+.camera-view__live-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-red);
+  border-radius: 50%;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.camera-view__image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.camera-view__streams--dual .camera-view__stream-item:first-child .camera-view__image {
+  border-radius: 0 0 0 var(--radius-lg);
+}
+
+.camera-view__streams--dual .camera-view__stream-item:last-child .camera-view__image {
+  border-radius: 0 0 var(--radius-lg) 0;
+}

@@ -1,0 +1,55 @@
+/* CalibrationPanel.css */
+
+.calibration-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calibration-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calibration-panel__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calibration-panel__input {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.calibration-panel__input:focus {
+  border-color: var(--accent-green);
+}
+
+.calibration-panel__input::-webkit-inner-spin-button {
+  opacity: 0.3;
+}
+
+.calibration-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.calibration-panel__message {
+  font-size: 0.8125rem;
+  color: var(--accent-green);
+}

@@ -1,0 +1,59 @@
+/* SensorChart.css */
+
+.sensor-chart__count {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.sensor-chart__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.sensor-chart__empty p {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.sensor-chart__empty-hint {
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* Custom Tooltip */
+.chart-tooltip {
+  background: rgba(15, 25, 40, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+}
+
+.chart-tooltip__time {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+}
+
+.chart-tooltip__item {
+  margin: 2px 0;
+  font-weight: 400;
+}
+
+.chart-tooltip__item strong {
+  font-weight: 600;
+}
+
+/* Override Recharts legend text */
+.recharts-legend-item-text {
+  color: var(--text-secondary) !important;
+}

@@ -1,0 +1,20 @@
+{
+    "serial": {
+        "port": "auto",
+        "baudrate": 9600
+    },
+    "sensor_calibration": {
+        "soil_moisture_dry": 500,
+        "soil_moisture_wet": 150
+    },
+    "camera": {
+        "indices": [
+            0
+        ],
+        "default_index": 0
+    },
+    "data": {
+        "csv_file_path": "data/sensor_data.csv",
+        "sensor_read_interval": 2.0
+    }
+}
