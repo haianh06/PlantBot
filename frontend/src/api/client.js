@@ -106,6 +106,9 @@ export const fetchCameraList = () => request('/camera/list');
 export const getCameraStreamUrl = (index = 0) =>
   `${API_BASE}/camera/stream/${index}`;
 
+/** Lấy trạng thái AI phát hiện bệnh cây (Camera 2) */
+export const fetchDiseaseStatus = () => request('/camera/disease-status');
+
 // ─── WebSocket ──────────────────────────────────────────────
 
 /**

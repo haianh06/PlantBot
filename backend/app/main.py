@@ -21,6 +21,7 @@ from backend.app.services.serial_service import SerialService
 from backend.app.services.csv_service import CSVService
 from backend.app.services.camera_service import CameraService
 from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes
+from backend.app.config import PROJECT_ROOT
 from backend.app.api.sensor_routes import broadcast_sensor_data
 
 # ─── Logging ─────────────────────────────────────────────────
@@ -77,6 +78,21 @@ async def lifespan(app: FastAPI):
     camera_service = CameraService()
     app.state.camera_service = camera_service
     logger.info("✅ Camera Service sẵn sàng")
+
+    # 4. Disease Detector (AI phát hiện bệnh cây — chỉ cho Camera 2 USB)
+    try:
+        from module_2.disease_detector import DiseaseDetector, TORCH_AVAILABLE
+
+        if TORCH_AVAILABLE:
+            model_path = str(PROJECT_ROOT / "module_2" / "models" / "bokchoy_cnn.pth")
+            disease_detector = DiseaseDetector(model_path)
+            camera_service.set_disease_detector(disease_detector)
+            logger.info("✅ AI Disease Detector sẵn sàng (Camera 2 — USB)")
+        else:
+            logger.warning("⚠️  PyTorch chưa cài — AI Disease Detection bị tắt")
+    except Exception as e:
+        logger.warning(f"⚠️  Không thể khởi tạo AI Disease Detector: {e}")
+        logger.warning("   Hệ thống vẫn chạy bình thường, chỉ tắt AI detection")
 
     logger.info("🌿 PlantBot Backend đã sẵn sàng!")
     logger.info(f"   📡 Serial: {'Online' if connected else 'Offline'}")

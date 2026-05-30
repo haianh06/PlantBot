@@ -61,6 +61,16 @@ class CameraListResponse(BaseModel):
     available_indices: list[int] = Field(default_factory=list, description="Camera indices khả dụng")
 
 
+class DiseaseStatus(BaseModel):
+    """Kết quả phát hiện bệnh cây từ AI model."""
+    label: str = Field(default="N/A", description="Nhãn dự đoán: Healthy / Diseased")
+    label_vn: str = Field(default="N/A", description="Nhãn tiếng Việt")
+    confidence: float = Field(default=0.0, description="Độ tin cậy (%)")
+    is_active: bool = Field(default=False, description="AI detection đang chạy")
+    timestamp: str = Field(default="", description="Thời điểm dự đoán gần nhất")
+    bboxes: list[dict] = Field(default_factory=list, description="Bounding boxes vùng bệnh")
+
+
 # ─── Calibration ─────────────────────────────────────────────
 class CalibrationData(BaseModel):
     """Thông số calibration cảm biến."""

@@ -25,7 +25,7 @@ export default function App() {
   // ─── Hooks ────────────────────────────────────
   const { sensorData, history, isConnected: wsConnected } = useSensorData();
   const { pumpOn, mistOn, togglePump, toggleMist, isLoading: pumpLoading } = usePumpControl(sensorData);
-  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading } = useCamera();
+  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading, diseaseStatus } = useCamera();
   const { systemInfo, reconnect, isLoading: sysLoading } = useSystemInfo();
 
   // ─── Handlers ─────────────────────────────────
@@ -74,6 +74,7 @@ export default function App() {
           getStreamUrl={getStreamUrl}
           isActive={isActive}
           isLoading={camLoading}
+          diseaseStatus={diseaseStatus}
         />
 
         {/* Sensor Cards + Chart */}
