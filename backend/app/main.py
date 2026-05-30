@@ -20,7 +20,9 @@ from backend.app.config import get_settings
 from backend.app.services.serial_service import SerialService
 from backend.app.services.csv_service import CSVService
 from backend.app.services.camera_service import CameraService
+from backend.app.services.scheduler_service import SchedulerService
 from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes
+from backend.app.api import schedule_routes
 from backend.app.config import PROJECT_ROOT
 from backend.app.api.sensor_routes import broadcast_sensor_data
 
@@ -98,10 +100,18 @@ async def lifespan(app: FastAPI):
     logger.info(f"   📡 Serial: {'Online' if connected else 'Offline'}")
     logger.info(f"   📁 CSV: {settings.CSV_FILE_PATH}")
 
+    # 5. Scheduler Service
+    scheduler_service = SchedulerService()
+    scheduler_service.set_command_callback(serial_service.send_command)
+    scheduler_service.start()
+    app.state.scheduler_service = scheduler_service
+    logger.info(f"✅ Scheduler sẵn sàng ({len(scheduler_service.get_all())} lịch)")
+
     yield
 
     # --- Shutdown ---
     logger.info("🌿 PlantBot Backend đang tắt...")
+    scheduler_service.stop()
     serial_service.disconnect()
     camera_service.stop_all()
     logger.info("🌿 Đã cleanup tất cả resources. Bye!")
@@ -135,6 +145,7 @@ app.include_router(sensor_routes.router)
 app.include_router(pump_routes.router)
 app.include_router(camera_routes.router)
 app.include_router(system_routes.router)
+app.include_router(schedule_routes.router)
 
 
 # ─── Root Endpoint ───────────────────────────────────────────

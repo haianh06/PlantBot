@@ -4,7 +4,7 @@
  * Điều phối toàn bộ hoạt động Arduino:
  *   1. Đọc cảm biến DHT22 (nhiệt độ + độ ẩm không khí)
  *   2. Đọc cảm biến Capacitive Soil Moisture (độ ẩm đất)
- *   3. Điều khiển 2 relay (bơm nước + phun sương) qua lệnh Serial
+ *   3. Điều khiển 3 relay (bơm nước + phun sương + quạt) qua lệnh Serial
  *   4. Gửi dữ liệu JSON qua Serial mỗi 2 giây
  * 
  * Sơ đồ kết nối:
@@ -12,10 +12,11 @@
  *   A0  → Capacitive Soil Moisture (analog)
  *   D5  → Relay 1 (máy bơm nước)
  *   D6  → Relay 2 (phun sương)
+ *   D7  → Relay 3 (quạt thông gió)
  * 
  * Serial Protocol:
- *   Gửi (Arduino → PC): {"temp":28.5,"humi":65.2,"soil":42,"pump":0,"mist":0}
- *   Nhận (PC → Arduino): PUMP_ON / PUMP_OFF / MIST_ON / MIST_OFF / STATUS
+ *   Gửi (Arduino → PC): {"temp":28.5,"humi":65.2,"soil":42,"pump":0,"mist":0,"fan":0}
+ *   Nhận (PC → Arduino): PUMP_ON / PUMP_OFF / MIST_ON / MIST_OFF / FAN_ON / FAN_OFF / STATUS
  */
 
 #include <DHT.h>
@@ -28,6 +29,7 @@
 #define SOIL_PIN      A0    // A0 — Capacitive Soil Moisture
 #define PUMP_RELAY    5     // D5 — Relay máy bơm nước
 #define MIST_RELAY    6     // D6 — Relay phun sương
+#define FAN_RELAY     7     // D7 — Relay quạt thông gió
 
 // ─── Timing ────────────────────────────────────────────────
 #define SEND_INTERVAL 2000  // Gửi dữ liệu mỗi 2 giây (ms)
@@ -37,6 +39,7 @@ DHT dht(DHT_PIN, DHT_TYPE);
 SoilSensor soilSensor(SOIL_PIN);
 RelayController pumpRelay(PUMP_RELAY, false);  // Active LOW
 RelayController mistRelay(MIST_RELAY, false);  // Active LOW
+RelayController fanRelay(FAN_RELAY, false);    // Active LOW
 
 // ─── Variables ─────────────────────────────────────────────
 unsigned long lastSendTime = 0;
@@ -52,6 +55,7 @@ void setup() {
     // Khởi tạo relay (tắt tất cả khi bắt đầu)
     pumpRelay.begin();
     mistRelay.begin();
+    fanRelay.begin();
     
     // Thông báo sẵn sàng
     Serial.println("{\"status\":\"ready\"}");
@@ -93,6 +97,8 @@ void sendSensorData() {
     Serial.print(pumpRelay.isOn() ? 1 : 0);
     Serial.print(",\"mist\":");
     Serial.print(mistRelay.isOn() ? 1 : 0);
+    Serial.print(",\"fan\":");
+    Serial.print(fanRelay.isOn() ? 1 : 0);
     Serial.println("}");
 }
 
@@ -126,6 +132,10 @@ void executeCommand(String cmd) {
         mistRelay.turnOn();
     } else if (cmd == "MIST_OFF") {
         mistRelay.turnOff();
+    } else if (cmd == "FAN_ON") {
+        fanRelay.turnOn();
+    } else if (cmd == "FAN_OFF") {
+        fanRelay.turnOff();
     } else if (cmd == "STATUS") {
         // Gửi trạng thái ngay lập tức
         sendSensorData();

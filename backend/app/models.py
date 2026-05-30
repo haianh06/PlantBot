@@ -18,13 +18,14 @@ class SensorData(BaseModel):
     soil_moisture: int = Field(description="Độ ẩm đất (%)")
     pump_on: bool = Field(default=False, description="Máy bơm đang bật")
     mist_on: bool = Field(default=False, description="Phun sương đang bật")
+    fan_on: bool = Field(default=False, description="Quạt đang bật")
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 
 
 # ─── Pump Control ────────────────────────────────────────────
 class PumpCommand(BaseModel):
     """Lệnh điều khiển bơm/phun sương từ frontend."""
-    device: Literal["pump", "mist"] = Field(description="Thiết bị: pump hoặc mist")
+    device: Literal["pump", "mist", "fan"] = Field(description="Thiết bị: pump, mist hoặc fan")
     action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
 
 
@@ -32,6 +33,7 @@ class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""
     pump_on: bool = Field(description="Máy bơm đang bật")
     mist_on: bool = Field(description="Phun sương đang bật")
+    fan_on: bool = Field(description="Quạt đang bật")
 
 
 # ─── System Info ─────────────────────────────────────────────
@@ -83,3 +85,36 @@ class MessageResponse(BaseModel):
     """Response message đơn giản."""
     message: str
     success: bool = True
+
+
+# ─── Scheduler ───────────────────────────────────────────────────────
+class ScheduleItem(BaseModel):
+    """
+    Một lịch hẹn giờ bật/tắt thiết bị.
+    Nhận thời gian dạng HH:MM, hành động on/off, và ngày trong tuần.
+    """
+    id: Optional[str] = Field(default=None, description="UUID của schedule")
+    device: Literal["pump", "mist", "fan"] = Field(description="Thiết bị")
+    action: Literal["on", "off"] = Field(description="Hành động")
+    time: str = Field(description="Thời gian hẹn (HH:MM, 24h format)")
+    days: list[int] = Field(
+        default_factory=lambda: [0, 1, 2, 3, 4, 5, 6],
+        description="Ngày trong tuần (0=Mon..6=Sun). Mặc định: mỗi ngày"
+    )
+    enabled: bool = Field(default=True, description="Lịch có đang active")
+    label: str = Field(default="", description="Ghi chú tùy chọn")
+
+
+class ScheduleCreateRequest(BaseModel):
+    """Request tạo lịch mới."""
+    device: Literal["pump", "mist", "fan"]
+    action: Literal["on", "off"]
+    time: str
+    days: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6])
+    enabled: bool = True
+    label: str = ""
+
+
+class ScheduleListResponse(BaseModel):
+    """Danh sách tất cả lịch hẹn giờ."""
+    schedules: list[ScheduleItem] = Field(default_factory=list)

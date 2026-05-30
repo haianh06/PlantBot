@@ -40,6 +40,8 @@ async def control_pump(command: PumpCommand, request: Request):
         ("pump", "off"): "PUMP_OFF",
         ("mist", "on"): "MIST_ON",
         ("mist", "off"): "MIST_OFF",
+        ("fan", "on"): "FAN_ON",
+        ("fan", "off"): "FAN_OFF",
     }
 
     serial_cmd = cmd_map.get((command.device, command.action))
@@ -52,7 +54,8 @@ async def control_pump(command: PumpCommand, request: Request):
     # Gửi lệnh xuống Arduino
     success = serial_service.send_command(serial_cmd)
 
-    device_name = "Máy bơm" if command.device == "pump" else "Phun sương"
+    device_names = {"pump": "Máy bơm", "mist": "Phun sương", "fan": "Quạt"}
+    device_name = device_names.get(command.device, command.device)
     action_name = "bật" if command.action == "on" else "tắt"
 
     return MessageResponse(
@@ -68,7 +71,7 @@ async def get_pump_status(request: Request):
     data = serial_service.get_latest_data()
 
     if data:
-        return PumpStatus(pump_on=data.pump_on, mist_on=data.mist_on)
+        return PumpStatus(pump_on=data.pump_on, mist_on=data.mist_on, fan_on=data.fan_on)
 
     # Chưa có dữ liệu → cả 2 đều tắt
-    return PumpStatus(pump_on=False, mist_on=False)
+    return PumpStatus(pump_on=False, mist_on=False, fan_on=False)

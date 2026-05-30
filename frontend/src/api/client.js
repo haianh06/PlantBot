@@ -46,15 +46,35 @@ export const getExportUrl = () => `${API_BASE}/sensors/export`;
 
 // ─── Pump Control APIs ─────────────────────────────────────
 
-/** Gửi lệnh điều khiển bơm/phun sương */
+/** Gửi lệnh điều khiển bơm/phun sương/quạt */
 export const controlPump = (device, action) =>
   request('/pump/control', {
     method: 'POST',
     body: JSON.stringify({ device, action }),
   });
 
-/** Lấy trạng thái bơm/sương hiện tại */
+/** Lấy trạng thái bơm/sương/quạt hiện tại */
 export const fetchPumpStatus = () => request('/pump/status');
+
+// ─── Scheduler APIs ───────────────────────────────────────────
+
+/** Lấy danh sách lịch hẹn giờ */
+export const fetchSchedules = () => request('/schedules');
+
+/** Tạo lịch hẹn giờ mới */
+export const createSchedule = (schedule) =>
+  request('/schedules', {
+    method: 'POST',
+    body: JSON.stringify(schedule),
+  });
+
+/** Xóa lịch hẹn giờ */
+export const deleteSchedule = (id) =>
+  request(`/schedules/${id}`, { method: 'DELETE' });
+
+/** Bật/tắt lịch hẹn giờ */
+export const toggleSchedule = (id) =>
+  request(`/schedules/${id}/toggle`, { method: 'POST' });
 
 // ─── System APIs ────────────────────────────────────────────
 

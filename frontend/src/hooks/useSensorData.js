@@ -92,6 +92,7 @@ export function useSensorData() {
             soil_moisture: parseInt(row.soil_moisture),
             pump_on: row.pump_on === 'True',
             mist_on: row.mist_on === 'True',
+            fan_on: row.fan_on === 'True',
             timestamp: row.timestamp,
           })));
         }
