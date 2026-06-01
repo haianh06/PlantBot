@@ -61,6 +61,8 @@ class CameraListResponse(BaseModel):
     available_indices: list[int] = Field(default_factory=list, description="Camera indices khả dụng")
 
 
+
+
 # ─── Calibration ─────────────────────────────────────────────
 class CalibrationData(BaseModel):
     """Thông số calibration cảm biến."""

@@ -16,7 +16,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from backend.app.models import SensorData
+from backend.app.schemas.sensor_data import SensorData
 from backend.app.config import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)

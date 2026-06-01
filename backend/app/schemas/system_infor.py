@@ -1,21 +1,5 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
 from typing import Literal
-class DeviceControlHistoryBase(BaseModel):
-    device_name: str
-    action: str
-    status: bool = True
-
-class DeviceControlHistoryCreate(DeviceControlHistoryBase):
-    pass
-
-class DeviceControlHistory(DeviceControlHistoryBase):
-    id: int
-    timestamp: datetime
-
-    class Config:
-        from_attributes = True
-
+from pydantic import Field, BaseModel
 # ─── Pump Control ────────────────────────────────────────────
 class PumpCommand(BaseModel):
     """Lệnh điều khiển bơm/phun sương từ frontend."""
@@ -27,5 +11,4 @@ class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""
     pump_on: bool = Field(description="Máy bơm đang bật")
     mist_on: bool = Field(description="Phun sương đang bật")
-
 
