@@ -1,13 +1,7 @@
 /* PumpControl.css */
 
 .pump-control {
-<<<<<<< HEAD
   display: contents;
-=======
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
 }
 
 .pump-control__card {

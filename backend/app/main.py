@@ -20,14 +20,7 @@ from backend.app.config import get_settings
 from backend.app.services.serial_service import SerialService
 from backend.app.services.csv_service import CSVService
 from backend.app.services.camera_service import CameraService
-<<<<<<< HEAD
 from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes, fan_routes, led_routes
-=======
-from backend.app.services.scheduler_service import SchedulerService
-from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes
-from backend.app.api import schedule_routes
-from backend.app.config import PROJECT_ROOT
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
 from backend.app.api.sensor_routes import broadcast_sensor_data
 
 # ─── Logging ─────────────────────────────────────────────────
@@ -85,37 +78,14 @@ async def lifespan(app: FastAPI):
     app.state.camera_service = camera_service
     logger.info("✅ Camera Service sẵn sàng")
 
-    # 4. Disease Detector (AI phát hiện bệnh cây — chỉ cho Camera 2 USB)
-    try:
-        from module_2.disease_detector import DiseaseDetector, TORCH_AVAILABLE
-
-        if TORCH_AVAILABLE:
-            model_path = str(PROJECT_ROOT / "module_2" / "models" / "bokchoy_cnn.pth")
-            disease_detector = DiseaseDetector(model_path)
-            camera_service.set_disease_detector(disease_detector)
-            logger.info("✅ AI Disease Detector sẵn sàng (Camera 2 — USB)")
-        else:
-            logger.warning("⚠️  PyTorch chưa cài — AI Disease Detection bị tắt")
-    except Exception as e:
-        logger.warning(f"⚠️  Không thể khởi tạo AI Disease Detector: {e}")
-        logger.warning("   Hệ thống vẫn chạy bình thường, chỉ tắt AI detection")
-
     logger.info("🌿 PlantBot Backend đã sẵn sàng!")
     logger.info(f"   📡 Serial: {'Online' if connected else 'Offline'}")
     logger.info(f"   📁 CSV: {settings.CSV_FILE_PATH}")
-
-    # 5. Scheduler Service
-    scheduler_service = SchedulerService()
-    scheduler_service.set_command_callback(serial_service.send_command)
-    scheduler_service.start()
-    app.state.scheduler_service = scheduler_service
-    logger.info(f"✅ Scheduler sẵn sàng ({len(scheduler_service.get_all())} lịch)")
 
     yield
 
     # --- Shutdown ---
     logger.info("🌿 PlantBot Backend đang tắt...")
-    scheduler_service.stop()
     serial_service.disconnect()
     camera_service.stop_all()
     logger.info("🌿 Đã cleanup tất cả resources. Bye!")
@@ -151,7 +121,6 @@ app.include_router(fan_routes.router)
 app.include_router(led_routes.router)
 app.include_router(camera_routes.router)
 app.include_router(system_routes.router)
-app.include_router(schedule_routes.router)
 
 
 # ─── Root Endpoint ───────────────────────────────────────────

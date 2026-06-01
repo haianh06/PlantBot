@@ -15,7 +15,7 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from backend.app.models import CameraInfo, CameraListResponse, DiseaseStatus, MessageResponse
+from backend.app.models import CameraInfo, CameraListResponse, MessageResponse
 
 logger = logging.getLogger(__name__)
 
@@ -98,18 +98,3 @@ async def list_cameras(request: Request):
         available_indices=available,
     )
 
-
-@router.get("/disease-status", response_model=DiseaseStatus)
-async def disease_status(request: Request):
-    """
-    Trạng thái phát hiện bệnh cây từ AI (Camera 2 — USB).
-
-    Trả về kết quả prediction gần nhất gồm:
-    - label: Healthy / Diseased
-    - confidence: Độ tin cậy (%)
-    - bboxes: Danh sách bounding boxes vùng nghi bệnh
-    - is_active: AI đang chạy hay không
-    """
-    camera_service = request.app.state.camera_service
-    status = camera_service.get_disease_status()
-    return DiseaseStatus(**status)

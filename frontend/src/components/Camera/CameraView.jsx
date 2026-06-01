@@ -1,43 +1,18 @@
 /**
- * CameraView.jsx — Camera Viewer (Multi-Camera + AI Disease Detection)
+ * CameraView.jsx — Camera Viewer (Multi-Camera)
  * =====================================================================
  * Hiển thị video stream từ 1 hoặc 2 camera cùng lúc.
- * Camera 2 (USB) tích hợp AI phát hiện bệnh cây với bounding boxes
- * hiển thị trực tiếp trên stream + badge trạng thái bệnh.
  */
 
 import { useState } from 'react';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import './CameraView.css';
 
-export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLoading, diseaseStatus }) {
+export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLoading }) {
   const [maximizedCam, setMaximizedCam] = useState(null);
 
   const handleToggleMaximize = (index) => {
     setMaximizedCam(maximizedCam === index ? null : index);
-  };
-
-  // Render disease status badge cho Camera 2
-  const renderDiseaseBadge = () => {
-    if (!diseaseStatus || !diseaseStatus.is_active) return null;
-
-    const isDiseased = diseaseStatus.label === 'Diseased';
-    const badgeClass = isDiseased
-      ? 'camera-view__disease-badge--diseased'
-      : 'camera-view__disease-badge--healthy';
-
-    const labelText = isDiseased ? 'Có bệnh' : 'Khỏe mạnh';
-    const icon = isDiseased ? '🔴' : '🟢';
-
-    return (
-      <div className={`camera-view__disease-badge ${badgeClass}`}>
-        <span className="camera-view__disease-icon">{icon}</span>
-        <span className="camera-view__disease-label">{labelText}</span>
-        <span className="camera-view__disease-conf">
-          {diseaseStatus.confidence}%
-        </span>
-      </div>
-    );
   };
 
   return (
@@ -117,7 +92,6 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
                 <div className="camera-view__stream-label">
                   <span className="camera-view__live-dot" />
                   Camera 2 — USB
-                  {renderDiseaseBadge()}
                 </div>
                 <button
                   className="camera-view__expand-btn"
@@ -156,7 +130,6 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
               <h3 className="camera-modal__title">
                 <span className="camera-view__live-dot" />
                 {maximizedCam === 0 ? 'Camera 1 — Laptop' : 'Camera 2 — USB'} (Góc Rộng HD)
-                {maximizedCam === 1 && renderDiseaseBadge()}
               </h3>
               <button className="camera-modal__close" onClick={() => setMaximizedCam(null)}>
                 &times;

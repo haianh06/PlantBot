@@ -43,7 +43,7 @@ $backendProc = Start-Process $pythonExe -ArgumentList "main.py" -WorkingDirector
 $processes += $backendProc
 
 # Chờ Backend khởi động và kết nối Serial/model hoàn tất (tránh lỗi ECONNREFUSED ở Frontend)
-Write-Host "Waiting for Backend to start on port 8000 (loading AI model, ~8s): " -NoNewline -ForegroundColor Yellow
+Write-Host "Waiting for Backend to start on port 8000: " -NoNewline -ForegroundColor Yellow
 
 $portReady = $false
 $maxWait = 30
