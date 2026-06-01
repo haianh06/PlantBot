@@ -1,8 +1,16 @@
 from pydantic import BaseModel
-class user_in(BaseModel):
-    pass
-class user_out(BaseModel):
+from datetime import datetime
+from typing import Optional
+
+class UserBase(BaseModel):
+    user_name: str
+
+class UserCreate(UserBase):
     pass
 
+class User(UserBase):
+    id: int
+    created_at: datetime
 
-        
+    class Config:
+        from_attributes = True
