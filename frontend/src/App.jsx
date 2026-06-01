@@ -9,6 +9,8 @@
 
 import { useSensorData } from './hooks/useSensorData';
 import { usePumpControl } from './hooks/usePumpControl';
+import { useFanControl } from './hooks/useFanControl';
+import { useLedControl } from './hooks/useLedControl';
 import { useCamera } from './hooks/useCamera';
 import { useSystemInfo } from './hooks/useSystemInfo';
 
@@ -16,6 +18,8 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { CameraView } from './components/Camera/CameraView';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { PumpControl } from './components/Controls/PumpControl';
+import { FanControl } from './components/Controls/FanControl';
+import { LedControl } from './components/Controls/LedControl';
 import { StatusBadge } from './components/common/StatusBadge';
 
 import { getExportUrl } from './api/client';
@@ -25,7 +29,7 @@ export default function App() {
   // ─── Hooks ────────────────────────────────────
   const { sensorData, history, isConnected: wsConnected } = useSensorData();
   const { pumpOn, mistOn, togglePump, toggleMist, isLoading: pumpLoading } = usePumpControl(sensorData);
-  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading } = useCamera();
+  const { fanOn, toggleFan, isLoading: fanLoading } = useFanControl(sensorData);  const { ledOn, toggleLed, isLoading: ledLoading } = useLedControl(sensorData);  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading } = useCamera();
   const { systemInfo, reconnect, isLoading: sysLoading } = useSystemInfo();
 
   // ─── Handlers ─────────────────────────────────
@@ -82,14 +86,26 @@ export default function App() {
           history={history}
         />
 
-        {/* Pump Controls */}
-        <PumpControl
-          pumpOn={pumpOn}
-          mistOn={mistOn}
-          togglePump={togglePump}
-          toggleMist={toggleMist}
-          isLoading={pumpLoading}
-        />
+        {/* Device Controls */}
+        <div className="device-controls">
+          <PumpControl
+            pumpOn={pumpOn}
+            mistOn={mistOn}
+            togglePump={togglePump}
+            toggleMist={toggleMist}
+            isLoading={pumpLoading}
+          />
+          <FanControl
+            fanOn={fanOn}
+            toggleFan={toggleFan}
+            isLoading={fanLoading}
+          />
+          <LedControl
+            ledOn={ledOn}
+            toggleLed={toggleLed}
+            isLoading={ledLoading}
+          />
+        </div>
       </main>
     </div>
   );

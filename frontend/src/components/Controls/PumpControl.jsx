@@ -9,7 +9,7 @@ import './PumpControl.css';
 
 export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading }) {
   return (
-    <div className="pump-control animate-fade-in">
+    <>
       {/* Máy bơm nước */}
       <div className={`pump-control__card card ${pumpOn ? 'pump-control__card--active' : ''}`}>
         <div className="pump-control__icon">💧</div>
@@ -55,6 +55,6 @@ export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading 
           )}
         </button>
       </div>
-    </div>
+    </>
   );
 }

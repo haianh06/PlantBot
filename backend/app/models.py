@@ -18,6 +18,8 @@ class SensorData(BaseModel):
     soil_moisture: int = Field(description="Độ ẩm đất (%)")
     pump_on: bool = Field(default=False, description="Máy bơm đang bật")
     mist_on: bool = Field(default=False, description="Phun sương đang bật")
+    fan_on: bool = Field(default=False, description="Quạt đang bật")
+    led_on: bool = Field(default=False, description="Đèn đang bật")
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 
 
@@ -27,6 +29,23 @@ class PumpCommand(BaseModel):
     device: Literal["pump", "mist"] = Field(description="Thiết bị: pump hoặc mist")
     action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
 
+class FanCommand(BaseModel):
+    """Lệnh điều khiển quạt từ frontend."""
+    device: Literal["fan"] = Field(description="Thiết bị: quạt")
+    action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
+
+class LedCommand(BaseModel):
+    """Lệnh điều khiển đèn từ frontend."""
+    device: Literal["led"] = Field(description="Thiết bị: đèn")
+    action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
+
+class FanStatus(BaseModel):
+    """Trạng thái hiện tại của relay."""
+    fan_on: bool = Field(description="Quạt đang bật")
+
+class LedStatus(BaseModel):
+    """Trạng thái hiện tại của relay."""
+    led_on: bool = Field(description="Đèn đang bật")
 
 class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""

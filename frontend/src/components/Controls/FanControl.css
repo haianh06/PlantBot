@@ -1,10 +1,10 @@
-/* PumpControl.css */
+/* fanControl.css */
 
-.pump-control {
+.fan-control {
   display: contents;
 }
 
-.pump-control__card {
+.fan-control__card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -13,25 +13,25 @@
   transition: all var(--transition-normal);
 }
 
-.pump-control__card--active {
+.fan-control__card--active {
   border-color: rgba(34, 197, 94, 0.3);
   box-shadow: var(--shadow-glow-green);
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
-.pump-control__icon {
+.fan-control__icon {
   font-size: 2.5rem;
   margin-bottom: 12px;
 }
 
-.pump-control__name {
+.fan-control__name {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 12px;
 }
 
-.pump-control__status {
+.fan-control__status {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -40,7 +40,7 @@
   margin-bottom: 20px;
 }
 
-.pump-control__dot {
+.fan-control__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -48,14 +48,14 @@
   transition: all var(--transition-normal);
 }
 
-.pump-control__dot--on {
+.fan-control__dot--on {
   background: var(--accent-green);
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
 /* Toggle button */
-.pump-control__button {
+.fan-control__button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,38 +73,38 @@
   user-select: none;
 }
 
-.pump-control__button--on {
+.fan-control__button--on {
   background: var(--accent-green);
   border-color: var(--accent-green);
   color: #000;
 }
 
-.pump-control__button--on:hover {
+.fan-control__button--on:hover {
   background: #16a34a;
   box-shadow: var(--shadow-glow-green);
   transform: translateY(-2px);
 }
 
-.pump-control__button--off {
+.fan-control__button--off {
   background: var(--accent-red-dim);
   border-color: rgba(239, 68, 68, 0.4);
   color: var(--accent-red);
 }
 
-.pump-control__button--off:hover {
+.fan-control__button--off:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: var(--accent-red);
   transform: translateY(-2px);
 }
 
-.pump-control__button:disabled {
+.fan-control__button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 @media (max-width: 640px) {
-  .pump-control {
+  .fan-control {
     grid-template-columns: 1fr;
   }
 }

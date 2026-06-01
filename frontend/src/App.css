@@ -341,13 +341,26 @@ body::before {
   to { transform: rotate(360deg); }
 }
 
+/* ─── Device Controls Container ─────────────────────────── */
+.device-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+}
+
 /* ─── Responsive ────────────────────────────────────────── */
-@media (max-width: 1024px) {
+@media (max-width: 600px) {
+  .app-sidebar {
+    display: none;
+  }
+
   .app-layout {
     grid-template-columns: 1fr;
   }
+}
 
-  .app-sidebar {
-    display: none;
+@media (max-width: 480px) {
+  .device-controls {
+    grid-template-columns: 1fr;
   }
 }
