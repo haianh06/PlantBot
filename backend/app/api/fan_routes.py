@@ -1,29 +1,29 @@
 """
-pump_routes.py — API endpoints điều khiển bơm & phun sương
+fan_routes.py — API endpoints điều khiển quạt
 ============================================================
 Endpoints:
-  POST /api/pump/control  — Gửi lệnh bật/tắt bơm hoặc phun sương
-  GET  /api/pump/status   — Trạng thái hiện tại của relay
+  POST /api/fan/control  — Gửi lệnh bật/tắt quạt
+  GET  /api/fan/status   — Trạng thái hiện tại của relay
 """
 
 import logging
 
 from fastapi import APIRouter, Request
 
-from backend.app.models import PumpCommand, PumpStatus, MessageResponse
+from backend.app.models import FanCommand, FanStatus, MessageResponse
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/pump", tags=["Pump Control"])
+router = APIRouter(prefix="/api/fan", tags=["Fan Control"])
 
 
 @router.post("/control", response_model=MessageResponse)
-async def control_pump(command: PumpCommand, request: Request):
+async def control_fan(command: FanCommand, request: Request):
     """
-    Điều khiển bơm nước hoặc phun sương.
+    Điều khiển quạt.
 
     Body:
-      - device: "pump" hoặc "mist"
+      - device: "fan"
       - action: "on" hoặc "off"
     """
     serial_service = request.app.state.serial_service
@@ -36,10 +36,6 @@ async def control_pump(command: PumpCommand, request: Request):
 
     # Map command → Serial command string
     cmd_map = {
-        ("pump", "on"): "PUMP_ON",
-        ("pump", "off"): "PUMP_OFF",
-        ("mist", "on"): "MIST_ON",
-        ("mist", "off"): "MIST_OFF",
         ("fan", "on"): "FAN_ON",
         ("fan", "off"): "FAN_OFF",
     }
@@ -54,8 +50,7 @@ async def control_pump(command: PumpCommand, request: Request):
     # Gửi lệnh xuống Arduino
     success = serial_service.send_command(serial_cmd)
 
-    device_names = {"pump": "Máy bơm", "mist": "Phun sương", "fan": "Quạt"}
-    device_name = device_names.get(command.device, command.device)
+    device_name = "Quạt"
     action_name = "bật" if command.action == "on" else "tắt"
 
     return MessageResponse(
@@ -64,14 +59,14 @@ async def control_pump(command: PumpCommand, request: Request):
     )
 
 
-@router.get("/status", response_model=PumpStatus)
-async def get_pump_status(request: Request):
-    """Lấy trạng thái hiện tại của máy bơm và phun sương."""
+@router.get("/status", response_model=FanStatus)
+async def get_fan_status(request: Request):
+    """Lấy trạng thái hiện tại của quạt."""
     serial_service = request.app.state.serial_service
     data = serial_service.get_latest_data()
 
     if data:
-        return PumpStatus(pump_on=data.pump_on, mist_on=data.mist_on, fan_on=data.fan_on)
+        return FanStatus(fan_on=data.fan_on)
 
-    # Chưa có dữ liệu → cả 2 đều tắt
-    return PumpStatus(pump_on=False, mist_on=False, fan_on=False)
+    # Chưa có dữ liệu → tắt
+    return FanStatus(fan_on=False)
