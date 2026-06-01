@@ -19,14 +19,17 @@ class SensorData(BaseModel):
     pump_on: bool = Field(default=False, description="Máy bơm đang bật")
     mist_on: bool = Field(default=False, description="Phun sương đang bật")
     fan_on: bool = Field(default=False, description="Quạt đang bật")
+<<<<<<< HEAD
     led_on: bool = Field(default=False, description="Đèn đang bật")
+=======
+>>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 
 
 # ─── Pump Control ────────────────────────────────────────────
 class PumpCommand(BaseModel):
     """Lệnh điều khiển bơm/phun sương từ frontend."""
-    device: Literal["pump", "mist"] = Field(description="Thiết bị: pump hoặc mist")
+    device: Literal["pump", "mist", "fan"] = Field(description="Thiết bị: pump, mist hoặc fan")
     action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
 
 class FanCommand(BaseModel):
@@ -51,6 +54,7 @@ class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""
     pump_on: bool = Field(description="Máy bơm đang bật")
     mist_on: bool = Field(description="Phun sương đang bật")
+    fan_on: bool = Field(description="Quạt đang bật")
 
 
 # ─── System Info ─────────────────────────────────────────────
@@ -80,6 +84,16 @@ class CameraListResponse(BaseModel):
     available_indices: list[int] = Field(default_factory=list, description="Camera indices khả dụng")
 
 
+class DiseaseStatus(BaseModel):
+    """Kết quả phát hiện bệnh cây từ AI model."""
+    label: str = Field(default="N/A", description="Nhãn dự đoán: Healthy / Diseased")
+    label_vn: str = Field(default="N/A", description="Nhãn tiếng Việt")
+    confidence: float = Field(default=0.0, description="Độ tin cậy (%)")
+    is_active: bool = Field(default=False, description="AI detection đang chạy")
+    timestamp: str = Field(default="", description="Thời điểm dự đoán gần nhất")
+    bboxes: list[dict] = Field(default_factory=list, description="Bounding boxes vùng bệnh")
+
+
 # ─── Calibration ─────────────────────────────────────────────
 class CalibrationData(BaseModel):
     """Thông số calibration cảm biến."""
@@ -92,3 +106,36 @@ class MessageResponse(BaseModel):
     """Response message đơn giản."""
     message: str
     success: bool = True
+
+
+# ─── Scheduler ───────────────────────────────────────────────────────
+class ScheduleItem(BaseModel):
+    """
+    Một lịch hẹn giờ bật/tắt thiết bị.
+    Nhận thời gian dạng HH:MM, hành động on/off, và ngày trong tuần.
+    """
+    id: Optional[str] = Field(default=None, description="UUID của schedule")
+    device: Literal["pump", "mist", "fan"] = Field(description="Thiết bị")
+    action: Literal["on", "off"] = Field(description="Hành động")
+    time: str = Field(description="Thời gian hẹn (HH:MM, 24h format)")
+    days: list[int] = Field(
+        default_factory=lambda: [0, 1, 2, 3, 4, 5, 6],
+        description="Ngày trong tuần (0=Mon..6=Sun). Mặc định: mỗi ngày"
+    )
+    enabled: bool = Field(default=True, description="Lịch có đang active")
+    label: str = Field(default="", description="Ghi chú tùy chọn")
+
+
+class ScheduleCreateRequest(BaseModel):
+    """Request tạo lịch mới."""
+    device: Literal["pump", "mist", "fan"]
+    action: Literal["on", "off"]
+    time: str
+    days: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6])
+    enabled: bool = True
+    label: str = ""
+
+
+class ScheduleListResponse(BaseModel):
+    """Danh sách tất cả lịch hẹn giờ."""
+    schedules: list[ScheduleItem] = Field(default_factory=list)

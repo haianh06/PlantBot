@@ -1,0 +1,215 @@
+/* SchedulerPanel.css */
+
+/* ─── Form ───────────────────────────────────────── */
+.scheduler-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.scheduler-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.scheduler-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scheduler-form__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scheduler-form__select,
+.scheduler-form__input {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.scheduler-form__select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.scheduler-form__select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.scheduler-form__select:focus,
+.scheduler-form__input:focus {
+  border-color: var(--accent-green);
+}
+
+/* input[type=time] styling */
+.scheduler-form__input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* Ngày trong tuần */
+.scheduler-form__days {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.scheduler-form__day-btn {
+  width: 36px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.scheduler-form__day-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.scheduler-form__day-btn--active {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #000;
+}
+
+/* ─── Empty state ────────────────────────────────── */
+.scheduler-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.scheduler-empty__icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  opacity: 0.3;
+}
+
+.scheduler-empty p {
+  font-size: 0.875rem;
+}
+
+.scheduler-empty__hint {
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* ─── Schedule list ──────────────────────────────── */
+.scheduler-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scheduler-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.scheduler-item:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.scheduler-item--disabled {
+  opacity: 0.45;
+}
+
+.scheduler-item__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.scheduler-item__time {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+  min-width: 65px;
+}
+
+.scheduler-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scheduler-item__device {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.scheduler-item__label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.scheduler-item__days {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.scheduler-item__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scheduler-item__delete {
+  padding: 4px 8px !important;
+  font-size: 0.875rem;
+}
+
+/* ─── Responsive ─────────────────────────────────── */
+@media (max-width: 640px) {
+  .scheduler-form__row {
+    grid-template-columns: 1fr;
+  }
+}

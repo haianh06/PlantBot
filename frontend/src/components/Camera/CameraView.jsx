@@ -1,14 +1,45 @@
 /**
- * CameraView.jsx — Camera Viewer (Multi-Camera)
- * ================================================
+ * CameraView.jsx — Camera Viewer (Multi-Camera + AI Disease Detection)
+ * =====================================================================
  * Hiển thị video stream từ 1 hoặc 2 camera cùng lúc.
- * Đặt ở khu vực main content (phía trên sensor cards).
+ * Camera 2 (USB) tích hợp AI phát hiện bệnh cây với bounding boxes
+ * hiển thị trực tiếp trên stream + badge trạng thái bệnh.
  */
 
+import { useState } from 'react';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import './CameraView.css';
 
-export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLoading }) {
+export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLoading, diseaseStatus }) {
+  const [maximizedCam, setMaximizedCam] = useState(null);
+
+  const handleToggleMaximize = (index) => {
+    setMaximizedCam(maximizedCam === index ? null : index);
+  };
+
+  // Render disease status badge cho Camera 2
+  const renderDiseaseBadge = () => {
+    if (!diseaseStatus || !diseaseStatus.is_active) return null;
+
+    const isDiseased = diseaseStatus.label === 'Diseased';
+    const badgeClass = isDiseased
+      ? 'camera-view__disease-badge--diseased'
+      : 'camera-view__disease-badge--healthy';
+
+    const labelText = isDiseased ? 'Có bệnh' : 'Khỏe mạnh';
+    const icon = isDiseased ? '🔴' : '🟢';
+
+    return (
+      <div className={`camera-view__disease-badge ${badgeClass}`}>
+        <span className="camera-view__disease-icon">{icon}</span>
+        <span className="camera-view__disease-label">{labelText}</span>
+        <span className="camera-view__disease-conf">
+          {diseaseStatus.confidence}%
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="camera-view card animate-fade-in">
       <div className="card__header">
@@ -56,6 +87,24 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
                   <span className="camera-view__live-dot" />
                   Camera 1 — Laptop
                 </div>
+                <button
+                  className="camera-view__expand-btn"
+                  onClick={() => handleToggleMaximize(0)}
+                  title="Phóng to Camera 1"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                </button>
                 <img
                   src={getStreamUrl(0)}
                   alt="Camera 1 Stream"
@@ -68,7 +117,26 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
                 <div className="camera-view__stream-label">
                   <span className="camera-view__live-dot" />
                   Camera 2 — USB
+                  {renderDiseaseBadge()}
                 </div>
+                <button
+                  className="camera-view__expand-btn"
+                  onClick={() => handleToggleMaximize(1)}
+                  title="Phóng to Camera 2"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                </button>
                 <img
                   src={getStreamUrl(1)}
                   alt="Camera 2 Stream"
@@ -79,6 +147,31 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
           </div>
         )}
       </div>
+
+      {/* Fullscreen Zoom Modal */}
+      {maximizedCam !== null && (
+        <div className="camera-modal" onClick={() => setMaximizedCam(null)}>
+          <div className="camera-modal__content" onClick={(e) => e.stopPropagation()}>
+            <div className="camera-modal__header">
+              <h3 className="camera-modal__title">
+                <span className="camera-view__live-dot" />
+                {maximizedCam === 0 ? 'Camera 1 — Laptop' : 'Camera 2 — USB'} (Góc Rộng HD)
+                {maximizedCam === 1 && renderDiseaseBadge()}
+              </h3>
+              <button className="camera-modal__close" onClick={() => setMaximizedCam(null)}>
+                &times;
+              </button>
+            </div>
+            <div className="camera-modal__body">
+              <img
+                src={getStreamUrl(maximizedCam)}
+                alt={`Camera ${maximizedCam + 1} Phóng To`}
+                className="camera-modal__image"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

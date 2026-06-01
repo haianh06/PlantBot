@@ -46,16 +46,17 @@ export const getExportUrl = () => `${API_BASE}/sensors/export`;
 
 // ─── Pump Control APIs ─────────────────────────────────────
 
-/** Gửi lệnh điều khiển bơm/phun sương */
+/** Gửi lệnh điều khiển bơm/phun sương/quạt */
 export const controlPump = (device, action) =>
   request('/pump/control', {
     method: 'POST',
     body: JSON.stringify({ device, action }),
   });
 
-/** Lấy trạng thái bơm/sương hiện tại */
+/** Lấy trạng thái bơm/sương/quạt hiện tại */
 export const fetchPumpStatus = () => request('/pump/status');
 
+<<<<<<< HEAD
 // ─── Fan Control APIs ─────────────────────────────────────
 
 /** Gửi lệnh điều khiển quạt */
@@ -79,6 +80,27 @@ export const controlLed = (device, action) =>
 
 /** Lấy trạng thái đèn hiện tại */
 export const fetchLedStatus = () => request('/led/status');
+=======
+// ─── Scheduler APIs ───────────────────────────────────────────
+
+/** Lấy danh sách lịch hẹn giờ */
+export const fetchSchedules = () => request('/schedules');
+
+/** Tạo lịch hẹn giờ mới */
+export const createSchedule = (schedule) =>
+  request('/schedules', {
+    method: 'POST',
+    body: JSON.stringify(schedule),
+  });
+
+/** Xóa lịch hẹn giờ */
+export const deleteSchedule = (id) =>
+  request(`/schedules/${id}`, { method: 'DELETE' });
+
+/** Bật/tắt lịch hẹn giờ */
+export const toggleSchedule = (id) =>
+  request(`/schedules/${id}/toggle`, { method: 'POST' });
+>>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
 
 // ─── System APIs ────────────────────────────────────────────
 
@@ -129,6 +151,9 @@ export const fetchCameraList = () => request('/camera/list');
 /** URL stream MJPEG cho camera */
 export const getCameraStreamUrl = (index = 0) =>
   `${API_BASE}/camera/stream/${index}`;
+
+/** Lấy trạng thái AI phát hiện bệnh cây (Camera 2) */
+export const fetchDiseaseStatus = () => request('/camera/disease-status');
 
 // ─── WebSocket ──────────────────────────────────────────────
 

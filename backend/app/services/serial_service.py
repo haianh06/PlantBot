@@ -229,7 +229,10 @@ class SerialService:
                     pump_on=bool(data.get("pump", 0)),
                     mist_on=bool(data.get("mist", 0)),
                     fan_on=bool(data.get("fan", 0)),
+<<<<<<< HEAD
                     led_on=bool(data.get("led", 0)),
+=======
+>>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
                     timestamp=get_timestamp(),
                 )
 
