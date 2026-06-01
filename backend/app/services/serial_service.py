@@ -18,7 +18,7 @@ from typing import Optional, Callable
 import serial
 import serial.tools.list_ports
 
-from backend.app.models import SensorData
+from backend.app.schemas.sensor_data import SensorData
 from backend.app.utils.time_helper import get_timestamp
 
 logger = logging.getLogger(__name__)

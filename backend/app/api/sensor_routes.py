@@ -15,7 +15,7 @@ from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Query
 from fastapi.responses import FileResponse
 
-from backend.app.models import SensorData
+from backend.app.schemas.sensor_data import SensorData
 
 logger = logging.getLogger(__name__)
 

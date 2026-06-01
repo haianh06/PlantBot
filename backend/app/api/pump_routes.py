@@ -10,7 +10,8 @@ import logging
 
 from fastapi import APIRouter, Request
 
-from backend.app.models import PumpCommand, PumpStatus, MessageResponse
+from backend.app.schemas.system_infor import PumpCommand, PumpStatus
+from backend.app.schemas.message import MessageResponse
 
 logger = logging.getLogger(__name__)
 

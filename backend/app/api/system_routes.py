@@ -13,7 +13,9 @@ import logging
 
 from fastapi import APIRouter, Request
 
-from backend.app.models import SystemInfo, ConnectRequest, CalibrationData, MessageResponse
+from backend.app.schemas.system_infor import SystemInfo, ConnectRequest
+from backend.app.schemas.calibration import CalibrationData
+from backend.app.schemas.message import MessageResponse
 from backend.app.config import get_calibration, update_calibration
 from backend.app.services.serial_service import SerialService
 

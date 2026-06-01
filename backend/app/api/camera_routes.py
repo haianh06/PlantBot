@@ -15,7 +15,8 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from backend.app.models import CameraInfo, CameraListResponse, MessageResponse
+from backend.app.schemas.camera_infor import CameraInfo, CameraListResponse
+from backend.app.schemas.message import MessageResponse
 
 logger = logging.getLogger(__name__)
 
