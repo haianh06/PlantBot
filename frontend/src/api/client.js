@@ -141,7 +141,8 @@ export const getCameraStreamUrl = (index = 0) =>
  */
 export function createSensorWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  // Kết nối tới backend port 8000 thay vì proxy qua frontend
-  const wsUrl = `${protocol}//localhost:8000/api/sensors/ws`;
+  // Tự động xác định địa chỉ máy chủ (hỗ trợ localhost, LAN IP, Tailscale) qua proxy của Frontend
+  const wsUrl = `${protocol}//${window.location.host}/api/sensors/ws`;
   return new WebSocket(wsUrl);
 }
+
