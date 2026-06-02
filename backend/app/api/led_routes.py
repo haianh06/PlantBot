@@ -10,7 +10,9 @@ import logging
 
 from fastapi import APIRouter, Request
 
-from backend.app.models import LedCommand, LedStatus, MessageResponse
+from backend.app.schemas.device_control_history import LedCommand, LedStatus
+
+from backend.app.schemas.message import MessageResponse
 
 logger = logging.getLogger(__name__)
 

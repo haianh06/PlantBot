@@ -38,12 +38,8 @@
 #define SOIL_PIN      A0    // A0 — Capacitive Soil Moisture
 #define PUMP_RELAY    5     // D5 — Relay máy bơm nước
 #define MIST_RELAY    6     // D6 — Relay phun sương
-<<<<<<< HEAD
 #define FAN_RELAY     7     // D7 — Relay quạt
 #define LED_RELAY     8     // D8 — Relay đèn
-=======
-#define FAN_RELAY     7     // D7 — Relay quạt thông gió
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
 
 // ─── Timing ────────────────────────────────────────────────
 #define SEND_INTERVAL 2000  // Gửi dữ liệu mỗi 2 giây (ms)
@@ -53,12 +49,8 @@ DHT dht(DHT_PIN, DHT_TYPE);
 SoilSensor soilSensor(SOIL_PIN);
 RelayController pumpRelay(PUMP_RELAY, false);  // Active LOW
 RelayController mistRelay(MIST_RELAY, false);  // Active LOW
-<<<<<<< HEAD
 RelayController fanRelay(FAN_RELAY, false);  // Active LOW
 RelayController ledRelay(LED_RELAY, false);  // Active LOW
-=======
-RelayController fanRelay(FAN_RELAY, false);    // Active LOW
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
 
 // ─── Variables ─────────────────────────────────────────────
 unsigned long lastSendTime = 0;
@@ -75,10 +67,7 @@ void setup() {
     pumpRelay.begin();
     mistRelay.begin();
     fanRelay.begin();
-<<<<<<< HEAD
     ledRelay.begin();
-=======
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
     
     // Thông báo sẵn sàng
     Serial.println("{\"status\":\"ready\"}");
@@ -122,11 +111,8 @@ void sendSensorData() {
     Serial.print(mistRelay.isOn() ? 1 : 0);
     Serial.print(",\"fan\":");
     Serial.print(fanRelay.isOn() ? 1 : 0);
-<<<<<<< HEAD
     Serial.print(",\"led\":");
     Serial.print(ledRelay.isOn() ? 1 : 0);
-=======
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
     Serial.println("}");
 }
 
@@ -160,7 +146,6 @@ void executeCommand(String cmd) {
         mistRelay.turnOn();
     } else if (cmd == "MIST_OFF") {
         mistRelay.turnOff();
-<<<<<<< HEAD
     } else if (cmd == "FAN_OFF") {
         fanRelay.turnOff();
     } else if (cmd == "FAN_ON") {
@@ -169,12 +154,6 @@ void executeCommand(String cmd) {
         ledRelay.turnOn();
     } else if (cmd == "LED_OFF") {
         ledRelay.turnOff();
-=======
-    } else if (cmd == "FAN_ON") {
-        fanRelay.turnOn();
-    } else if (cmd == "FAN_OFF") {
-        fanRelay.turnOff();
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
     } else if (cmd == "STATUS") {
         // Gửi trạng thái ngay lập tức
         sendSensorData();
