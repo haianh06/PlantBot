@@ -10,7 +10,7 @@ import logging
 
 from fastapi import APIRouter, Request
 
-from backend.app.models import FanCommand, FanStatus, MessageResponse
+from backend.app.schemas.device_control_history import FanCommand, FanStatus, MessageResponse
 
 logger = logging.getLogger(__name__)
 
