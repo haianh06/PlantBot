@@ -29,23 +29,7 @@ class PumpCommand(BaseModel):
     device: Literal["pump", "mist", "fan"] = Field(description="Thiết bị: pump, mist hoặc fan")
     action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
 
-class FanCommand(BaseModel):
-    """Lệnh điều khiển quạt từ frontend."""
-    device: Literal["fan"] = Field(description="Thiết bị: quạt")
-    action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
-
-class LedCommand(BaseModel):
-    """Lệnh điều khiển đèn từ frontend."""
-    device: Literal["led"] = Field(description="Thiết bị: đèn")
-    action: Literal["on", "off"] = Field(description="Hành động: on hoặc off")
-
-class FanStatus(BaseModel):
-    """Trạng thái hiện tại của relay."""
-    fan_on: bool = Field(description="Quạt đang bật")
-
-class LedStatus(BaseModel):
-    """Trạng thái hiện tại của relay."""
-    led_on: bool = Field(description="Đèn đang bật")
+y
 
 class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""

@@ -27,5 +27,8 @@ class PumpStatus(BaseModel):
     """Trạng thái hiện tại của relay."""
     pump_on: bool = Field(description="Máy bơm đang bật")
     mist_on: bool = Field(description="Phun sương đang bật")
+    
+
+
 
 
