@@ -42,8 +42,33 @@ $pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $backendProc = Start-Process $pythonExe -ArgumentList "main.py" -WorkingDirectory $projectRoot -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $projectRoot "backend.log") -RedirectStandardError (Join-Path $projectRoot "backend.err")
 $processes += $backendProc
 
-# Chờ Backend khởi động và kết nối Serial hoàn tất (tránh lỗi ECONNREFUSED tạm thời ở Frontend)
-Start-Sleep -Seconds 3
+# Chờ Backend khởi động và kết nối Serial/model hoàn tất (tránh lỗi ECONNREFUSED ở Frontend)
+Write-Host "Waiting for Backend to start on port 8000: " -NoNewline -ForegroundColor Yellow
+
+$portReady = $false
+$maxWait = 30
+$waited = 0
+
+while (-not $portReady -and $waited -lt $maxWait) {
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcp.Connect("127.0.0.1", 8000)
+        $tcp.Close()
+        $portReady = $true
+    } catch {
+        Write-Host "." -NoNewline -ForegroundColor Gray
+        Start-Sleep -Seconds 1
+        $waited++
+    }
+}
+
+if (-not $portReady) {
+    Write-Host "`nError: Backend failed to start on port 8000 within $maxWait seconds." -ForegroundColor Red
+    Write-Host "Please check backend.err for details." -ForegroundColor Yellow
+    Stop-PlantBot
+}
+
+Write-Host " Ready!" -ForegroundColor Green
 
 # ─── Start Frontend ─────────────────────────────────────────
 Write-Host "Starting Frontend (Vite)..." -ForegroundColor Cyan

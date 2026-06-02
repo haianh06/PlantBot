@@ -154,6 +154,8 @@ frontend/.vite/
 
 ### Data files ###
 data/*.csv
+data/boychok_dataset_all
+data/boychok_dataset
 !data/.gitkeep
 
 ### Environment ###

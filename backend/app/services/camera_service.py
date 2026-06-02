@@ -8,15 +8,17 @@ camera_service.py — Quản lý Camera Stream (Multi-Camera)
 """
 
 import cv2
-import time
 import threading
 import logging
+import time
+
 from typing import Optional, Generator
 
 logger = logging.getLogger(__name__)
 
 # Số camera tối đa scan
 MAX_CAMERA_PROBE = 3
+
 
 
 class CameraService:
@@ -54,20 +56,33 @@ class CameraService:
             return True
 
         try:
-            cap = cv2.VideoCapture(index)
+            # Sử dụng DirectShow (cv2.CAP_DSHOW) trên Windows để thay đổi độ phân giải camera USB ổn định hơn
+            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+            if not cap.isOpened():
+                # Fallback về backend mặc định nếu DSHOW không mở được
+                cap = cv2.VideoCapture(index)
+
             if not cap.isOpened():
                 logger.warning(f"Không thể mở camera {index}")
                 return False
 
-            # Cấu hình camera — giảm resolution cho performance
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            # Thiết lập codec MJPEG để mở khóa độ phân giải rộng HD (16:9) trên các webcam USB
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
+            # Cấu hình camera — Sử dụng độ phân giải HD 1280x720 (16:9) để có góc camera rộng nhất
+            # Tránh việc bị crop hẹp ở tỉ lệ 4:3 (640x480) mặc định của OpenCV
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             cap.set(cv2.CAP_PROP_FPS, 15)
 
             self._captures[index] = cap
             self._locks[index] = threading.Lock()
 
-            logger.info(f"Đã bật camera {index}")
+            actual_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            actual_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            logger.info(f"Đã bật camera {index} thành công. Độ phân giải thực tế: {actual_w}x{actual_h}")
+
+
             return True
 
         except Exception as e:
@@ -85,6 +100,9 @@ class CameraService:
                 del self._captures[index]
                 if index in self._locks:
                     del self._locks[index]
+
+
+
             logger.info(f"Đã tắt camera {index}")
 
     def stop_all(self) -> None:
@@ -124,6 +142,7 @@ class CameraService:
                 if not ret:
                     return None
 
+
                 # Encode frame sang JPEG
                 _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 return jpeg.tobytes()
@@ -131,6 +150,7 @@ class CameraService:
             except Exception as e:
                 logger.error(f"Lỗi capture frame camera {index}: {e}")
                 return None
+
 
     def generate_stream(self, index: int = 0) -> Generator[bytes, None, None]:
         """

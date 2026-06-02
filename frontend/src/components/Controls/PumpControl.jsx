@@ -7,54 +7,53 @@
 
 import './PumpControl.css';
 
+function DeviceCard({ icon, name, isOn, onToggle, isLoading, onLabel, offLabel }) {
+  return (
+    <div className={`pump-control__card card ${isOn ? 'pump-control__card--active' : ''}`}>
+      <div className="pump-control__icon">{icon}</div>
+      <h3 className="pump-control__name">{name}</h3>
+
+      <div className="pump-control__status">
+        <span className={`pump-control__dot ${isOn ? 'pump-control__dot--on' : 'pump-control__dot--off'}`} />
+        <span>{isOn ? 'Đang bật' : 'Đang tắt'}</span>
+      </div>
+
+      <button
+        className={`pump-control__button ${isOn ? 'pump-control__button--on' : 'pump-control__button--off'}`}
+        onClick={onToggle}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <span className="spinner" />
+        ) : (
+          isOn ? offLabel : onLabel
+        )}
+      </button>
+    </div>
+  );
+}
+
 export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading }) {
   return (
     <div className="pump-control animate-fade-in">
-      {/* Máy bơm nước */}
-      <div className={`pump-control__card card ${pumpOn ? 'pump-control__card--active' : ''}`}>
-        <div className="pump-control__icon">💧</div>
-        <h3 className="pump-control__name">Máy Bơm Nước</h3>
-
-        <div className="pump-control__status">
-          <span className={`pump-control__dot ${pumpOn ? 'pump-control__dot--on' : 'pump-control__dot--off'}`} />
-          <span>{pumpOn ? 'Đang bật' : 'Đang tắt'}</span>
-        </div>
-
-        <button
-          className={`pump-control__button ${pumpOn ? 'pump-control__button--on' : 'pump-control__button--off'}`}
-          onClick={togglePump}
-          disabled={isLoading?.pump}
-        >
-          {isLoading?.pump ? (
-            <span className="spinner" />
-          ) : (
-            pumpOn ? 'Tắt Bơm' : 'Bật Bơm'
-          )}
-        </button>
-      </div>
-
-      {/* Phun sương */}
-      <div className={`pump-control__card card ${mistOn ? 'pump-control__card--active' : ''}`}>
-        <div className="pump-control__icon">🌫️</div>
-        <h3 className="pump-control__name">Phun Sương</h3>
-
-        <div className="pump-control__status">
-          <span className={`pump-control__dot ${mistOn ? 'pump-control__dot--on' : 'pump-control__dot--off'}`} />
-          <span>{mistOn ? 'Đang bật' : 'Đang tắt'}</span>
-        </div>
-
-        <button
-          className={`pump-control__button ${mistOn ? 'pump-control__button--on' : 'pump-control__button--off'}`}
-          onClick={toggleMist}
-          disabled={isLoading?.mist}
-        >
-          {isLoading?.mist ? (
-            <span className="spinner" />
-          ) : (
-            mistOn ? 'Tắt Sương' : 'Bật Sương'
-          )}
-        </button>
-      </div>
+      <DeviceCard
+        icon="💧"
+        name="Máy Bơm Nước"
+        isOn={pumpOn}
+        onToggle={togglePump}
+        isLoading={isLoading?.pump}
+        onLabel="Bật Bơm"
+        offLabel="Tắt Bơm"
+      />
+      <DeviceCard
+        icon="🌫️"
+        name="Phun Sương"
+        isOn={mistOn}
+        onToggle={toggleMist}
+        isLoading={isLoading?.mist}
+        onLabel="Bật Sương"
+        offLabel="Tắt Sương"
+      />
     </div>
   );
 }

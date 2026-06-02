@@ -20,7 +20,7 @@ from backend.app.config import get_settings
 from backend.app.services.serial_service import SerialService
 from backend.app.services.csv_service import CSVService
 from backend.app.services.camera_service import CameraService
-from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes
+from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes, fan_routes, led_routes
 from backend.app.api.sensor_routes import broadcast_sensor_data
 
 # ─── Logging ─────────────────────────────────────────────────
@@ -117,6 +117,8 @@ app.add_middleware(
 # ─── Include Routers ─────────────────────────────────────────
 app.include_router(sensor_routes.router)
 app.include_router(pump_routes.router)
+app.include_router(fan_routes.router)
+app.include_router(led_routes.router)
 app.include_router(camera_routes.router)
 app.include_router(system_routes.router)
 

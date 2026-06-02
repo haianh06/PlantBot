@@ -228,6 +228,8 @@ class SerialService:
                     soil_moisture=data.get("soil", -1),
                     pump_on=bool(data.get("pump", 0)),
                     mist_on=bool(data.get("mist", 0)),
+                    fan_on=bool(data.get("fan", 0)),
+                    led_on=bool(data.get("led", 0)),
                     timestamp=get_timestamp(),
                 )
 

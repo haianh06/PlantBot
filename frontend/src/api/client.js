@@ -46,15 +46,40 @@ export const getExportUrl = () => `${API_BASE}/sensors/export`;
 
 // ─── Pump Control APIs ─────────────────────────────────────
 
-/** Gửi lệnh điều khiển bơm/phun sương */
+/** Gửi lệnh điều khiển bơm/phun sương/quạt */
 export const controlPump = (device, action) =>
   request('/pump/control', {
     method: 'POST',
     body: JSON.stringify({ device, action }),
   });
 
-/** Lấy trạng thái bơm/sương hiện tại */
+/** Lấy trạng thái bơm/sương/quạt hiện tại */
 export const fetchPumpStatus = () => request('/pump/status');
+
+// ─── Fan Control APIs ─────────────────────────────────────
+
+/** Gửi lệnh điều khiển quạt */
+export const controlFan = (device, action) =>
+  request('/fan/control', {
+    method: 'POST',
+    body: JSON.stringify({ device, action }),
+  });
+
+/** Lấy trạng thái quạt hiện tại */
+export const fetchFanStatus = () => request('/fan/status');
+
+// ─── Led Control APIs ──────────────────────────────────────
+
+/** Gửi lệnh điều khiển đèn */
+export const controlLed = (device, action) =>
+  request('/led/control', {
+    method: 'POST',
+    body: JSON.stringify({ device, action }),
+  });
+
+/** Lấy trạng thái đèn hiện tại */
+export const fetchLedStatus = () => request('/led/status');
+
 
 // ─── System APIs ────────────────────────────────────────────
 
@@ -106,6 +131,8 @@ export const fetchCameraList = () => request('/camera/list');
 export const getCameraStreamUrl = (index = 0) =>
   `${API_BASE}/camera/stream/${index}`;
 
+
+
 // ─── WebSocket ──────────────────────────────────────────────
 
 /**
@@ -114,6 +141,7 @@ export const getCameraStreamUrl = (index = 0) =>
  */
 export function createSensorWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/api/sensors/ws`;
+  // Kết nối tới backend port 8000 thay vì proxy qua frontend
+  const wsUrl = `${protocol}//localhost:8000/api/sensors/ws`;
   return new WebSocket(wsUrl);
 }

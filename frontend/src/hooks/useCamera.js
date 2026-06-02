@@ -7,7 +7,11 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { toggleCamera as apiToggleCamera, fetchCameraStatus, getCameraStreamUrl } from '../api/client';
+import {
+  toggleCamera as apiToggleCamera,
+  fetchCameraStatus,
+  getCameraStreamUrl,
+} from '../api/client';
 
 export function useCamera() {
   // Map: { 0: true, 1: false } — camera index → đang active
