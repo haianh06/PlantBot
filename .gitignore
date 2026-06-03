@@ -168,3 +168,4 @@ data/boychok_dataset
 ### Logs ###
 *.log
 *.err
+.obsidian/
