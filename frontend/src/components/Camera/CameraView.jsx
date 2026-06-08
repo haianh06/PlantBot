@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import './CameraView.css';
 
-export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLoading }) {
+export function CameraView({ cameras, toggleCamera, toggleAi, getStreamUrl, isActive, isAiActive, isLoading }) {
   const [maximizedCam, setMaximizedCam] = useState(null);
 
   const handleToggleMaximize = (index) => {
@@ -89,9 +89,20 @@ export function CameraView({ cameras, toggleCamera, getStreamUrl, isActive, isLo
             )}
             {isActive(1) && (
               <div className="camera-view__stream-item">
-                <div className="camera-view__stream-label">
-                  <span className="camera-view__live-dot" />
-                  Camera 2 — USB
+                <div className="camera-view__stream-label" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="camera-view__live-dot" />
+                    Camera 2 — USB
+                  </div>
+                  <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                  <div className="camera-view__ai-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.75rem' }}>AI</span>
+                    <ToggleSwitch
+                      checked={isAiActive(1)}
+                      onChange={() => toggleAi(1)}
+                      disabled={isLoading['ai_1']}
+                    />
+                  </div>
                 </div>
                 <button
                   className="camera-view__expand-btn"

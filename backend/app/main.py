@@ -74,7 +74,15 @@ async def lifespan(app: FastAPI):
         logger.warning("⚠️  Chưa kết nối Arduino — chạy ở chế độ offline")
 
     # 3. Camera Service
-    camera_service = CameraService()
+    from backend.app.services.ai_service import AIService
+    import os
+    
+    # Path to AI model
+    model_path = r"c:\Documents\Project\PlantBot\ai_module\plantbot_best.pt"
+    ai_service = AIService(model_path=model_path)
+    app.state.ai_service = ai_service
+
+    camera_service = CameraService(ai_service=ai_service)
     app.state.camera_service = camera_service
     logger.info("✅ Camera Service sẵn sàng")
 

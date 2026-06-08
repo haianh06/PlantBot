@@ -9,13 +9,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   toggleCamera as apiToggleCamera,
+  toggleCameraAi as apiToggleCameraAi,
   fetchCameraStatus,
   getCameraStreamUrl,
 } from '../api/client';
 
 export function useCamera() {
-  // Map: { 0: true, 1: false } — camera index → đang active
   const [cameras, setCameras] = useState({});
+  const [aiStates, setAiStates] = useState({});
   const [isLoading, setIsLoading] = useState({});
 
   // Fetch trạng thái camera ban đầu
@@ -23,10 +24,13 @@ export function useCamera() {
     fetchCameraStatus()
       .then((res) => {
         const state = {};
+        const aiState = {};
         (res.cameras || []).forEach((cam) => {
           state[cam.index] = cam.is_active;
+          aiState[cam.index] = cam.ai_active;
         });
         setCameras(state);
+        setAiStates(aiState);
       })
       .catch(() => { /* Camera service chưa sẵn sàng */ });
   }, []);
@@ -47,6 +51,22 @@ export function useCamera() {
     }
   }, []);
 
+  // Toggle AI theo index
+  const toggleAi = useCallback(async (index) => {
+    setIsLoading((prev) => ({ ...prev, [`ai_${index}`]: true }));
+    try {
+      await apiToggleCameraAi(index);
+      setAiStates((prev) => ({
+        ...prev,
+        [index]: !prev[index],
+      }));
+    } catch (error) {
+      console.error(`Lỗi toggle AI ${index}:`, error);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, [`ai_${index}`]: false }));
+    }
+  }, []);
+
   // Lấy URL stream cho camera
   const getStreamUrl = useCallback((index) => {
     return getCameraStreamUrl(index);
@@ -57,11 +77,19 @@ export function useCamera() {
     return cameras[index] || false;
   }, [cameras]);
 
+  // Kiểm tra AI có đang active
+  const isAiActive = useCallback((index) => {
+    return aiStates[index] || false;
+  }, [aiStates]);
+
   return {
     cameras,
+    aiStates,
     toggleCamera: toggleCam,
+    toggleAi,
     getStreamUrl,
     isActive,
+    isAiActive,
     isLoading,
   };
 }

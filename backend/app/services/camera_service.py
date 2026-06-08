@@ -8,6 +8,7 @@ camera_service.py — Quản lý Camera Stream (Multi-Camera)
 """
 
 import cv2
+import numpy as np
 import threading
 import logging
 import time
@@ -37,9 +38,11 @@ class CameraService:
         service.stop_all()  # Tắt tất cả
     """
 
-    def __init__(self):
+    def __init__(self, ai_service=None):
         self._captures: dict[int, cv2.VideoCapture] = {}
         self._locks: dict[int, threading.Lock] = {}
+        self._ai_service = ai_service
+        self._ai_enabled: dict[int, bool] = {0: False, 1: False}
 
     def start(self, index: int = 0) -> bool:
         """
@@ -143,6 +146,12 @@ class CameraService:
                     return None
 
 
+
+
+                # Nếu AI đang bật cho camera này, dự đoán và vẽ box
+                if self._ai_enabled.get(index, False) and self._ai_service:
+                    frame = self._ai_service.detect_and_draw(frame)
+
                 # Encode frame sang JPEG
                 _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 return jpeg.tobytes()
@@ -152,6 +161,15 @@ class CameraService:
                 return None
 
 
+    def toggle_ai(self, index: int) -> bool:
+        """Bật/tắt AI cho camera index. Trả về trạng thái mới."""
+        current = self._ai_enabled.get(index, False)
+        self._ai_enabled[index] = not current
+        logger.info(f"Đã {'bật' if not current else 'tắt'} AI cho camera {index}")
+        return not current
+
+    def is_ai_enabled(self, index: int) -> bool:
+        return self._ai_enabled.get(index, False)
     def generate_stream(self, index: int = 0) -> Generator[bytes, None, None]:
         """
         Generator tạo MJPEG stream cho StreamingResponse.

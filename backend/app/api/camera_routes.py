@@ -68,6 +68,21 @@ async def toggle_camera(index: int, request: Request):
         )
 
 
+@router.post("/toggle_ai/{index}", response_model=MessageResponse)
+async def toggle_camera_ai(index: int, request: Request):
+    """
+    Bật/tắt AI cho camera theo index.
+    """
+    camera_service = request.app.state.camera_service
+    
+    # Toggle AI state
+    new_state = camera_service.toggle_ai(index)
+    
+    if new_state:
+        return MessageResponse(message=f"Đã bật AI cho camera {index}")
+    else:
+        return MessageResponse(message=f"Đã tắt AI cho camera {index}")
+
 @router.get("/status")
 async def camera_status(request: Request):
     """Trạng thái tất cả camera (đang bật/tắt)."""
@@ -77,7 +92,7 @@ async def camera_status(request: Request):
     cameras = []
     # Hiển thị tối đa 3 camera slots
     for i in range(3):
-        cameras.append(CameraInfo(index=i, is_active=(i in active)))
+        cameras.append(CameraInfo(index=i, is_active=(i in active), ai_active=camera_service.is_ai_enabled(i)))
 
     return {"cameras": cameras}
 
@@ -90,7 +105,7 @@ async def list_cameras(request: Request):
     active = camera_service.get_active_cameras()
 
     cameras = [
-        CameraInfo(index=i, is_active=(i in active))
+        CameraInfo(index=i, is_active=(i in active), ai_active=camera_service.is_ai_enabled(i))
         for i in available
     ]
 

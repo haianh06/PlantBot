@@ -31,7 +31,7 @@ export default function App() {
   const { pumpOn, mistOn, togglePump, toggleMist, isLoading: pumpLoading } = usePumpControl(sensorData);
   const { fanOn, toggleFan, isLoading: fanLoading } = useFanControl(sensorData);
   const { ledOn, toggleLed, isLoading: ledLoading } = useLedControl(sensorData);
-  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading } = useCamera();
+  const { cameras, toggleCamera, toggleAi, getStreamUrl, isActive, isAiActive, isLoading: camLoading } = useCamera();
   const { systemInfo, reconnect, isLoading: sysLoading } = useSystemInfo();
 
   // ─── Handlers ─────────────────────────────────
@@ -77,8 +77,10 @@ export default function App() {
         <CameraView
           cameras={cameras}
           toggleCamera={toggleCamera}
+          toggleAi={toggleAi}
           getStreamUrl={getStreamUrl}
           isActive={isActive}
+          isAiActive={isAiActive}
           isLoading={camLoading}
         />
 

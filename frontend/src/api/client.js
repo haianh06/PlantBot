@@ -121,6 +121,10 @@ export const updateCalibration = (dryValue, wetValue) =>
 export const toggleCamera = (index = 0) =>
   request(`/camera/toggle/${index}`, { method: 'POST' });
 
+/** Toggle AI cho camera */
+export const toggleCameraAi = (index = 0) =>
+  request(`/camera/toggle_ai/${index}`, { method: 'POST' });
+
 /** Lấy trạng thái camera */
 export const fetchCameraStatus = () => request('/camera/status');
 
