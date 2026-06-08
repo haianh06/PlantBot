@@ -12,25 +12,17 @@
  *   A0  → Capacitive Soil Moisture (analog)
  *   D5  → Relay 1 (máy bơm nước)
  *   D6  → Relay 2 (phun sương)
-<<<<<<< HEAD
  *   D7  → Relay 3 (quạt)
  *   D8  → Relay 4 (đèn)
  * 
  * Serial Protocol:
  *   Gửi (Arduino → PC): {"temp":28.5,"humi":65.2,"soil":42,"pump":0,"mist":0,"fan":0,"led":0}
  *   Nhận (PC → Arduino): PUMP_ON / PUMP_OFF / MIST_ON / MIST_OFF / FAN_ON / FAN_OFF / LED_ON / LED_OFF / STATUS
-=======
- *   D7  → Relay 3 (quạt thông gió)
- * 
- * Serial Protocol:
- *   Gửi (Arduino → PC): {"temp":28.5,"humi":65.2,"soil":42,"pump":0,"mist":0,"fan":0}
- *   Nhận (PC → Arduino): PUMP_ON / PUMP_OFF / MIST_ON / MIST_OFF / FAN_ON / FAN_OFF / STATUS
->>>>>>> ed819e82b4960937cfd5629b9427b0064b70af3c
  */
 
 #include <DHT.h>
 #include "SoilSensor.h"
-#include "MyIrrigationPump.h"
+#include "RelayController.h"
 
 // ─── Pin Configuration ─────────────────────────────────────
 #define DHT_PIN       4     // D4 — DHT22 data pin
@@ -47,10 +39,10 @@
 // ─── Object Instances ──────────────────────────────────────
 DHT dht(DHT_PIN, DHT_TYPE);
 SoilSensor soilSensor(SOIL_PIN);
-RelayController pumpRelay(PUMP_RELAY, false);  // Active LOW
-RelayController mistRelay(MIST_RELAY, false);  // Active LOW
-RelayController fanRelay(FAN_RELAY, false);  // Active LOW
-RelayController ledRelay(LED_RELAY, false);  // Active LOW
+RelayController pumpRelay(PUMP_RELAY, true);  // Active LOW
+RelayController mistRelay(MIST_RELAY, true);  // Active LOW
+RelayController fanRelay(FAN_RELAY, true);  // Active LOW
+RelayController ledRelay(LED_RELAY, true);  // Active LOW
 
 // ─── Variables ─────────────────────────────────────────────
 unsigned long lastSendTime = 0;
