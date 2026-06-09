@@ -11,6 +11,7 @@ Architecture:
 
 import asyncio
 import logging
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -57,12 +58,32 @@ async def lifespan(app: FastAPI):
 
     # Callback: khi có data mới → lưu CSV + broadcast WebSocket
     loop = asyncio.get_event_loop()
+    last_periodic_save = 0.0
+    PERIODIC_INTERVAL = 60.0  # giây
 
     def on_sensor_data(data):
-        """Callback từ serial reader thread → lưu CSV + broadcast WS."""
-        csv_service.save_record(data)
-        # Schedule async broadcast trong event loop
+        """Callback từ serial reader thread → lọc & lưu CSV + broadcast WS."""
+        nonlocal last_periodic_save
+        
+        # 1. Luôn broadcast WebSocket để UI cập nhật realtime
         asyncio.run_coroutine_threadsafe(broadcast_sensor_data(data), loop)
+
+        # 2. Hybrid Logging Logic cho ML Tuning
+        # Ghi liên tục (tốc độ cao) khi Bơm, Quạt hoặc Phun sương đang chạy
+        # (Giúp bắt trọn phản hồi của môi trường để tune lượng nước/nhiệt độ)
+        is_actuator_active = data.pump_on or data.fan_on or data.mist_on
+        
+        current_time = time.time()
+        should_save = False
+        
+        if is_actuator_active:
+            should_save = True
+        elif current_time - last_periodic_save >= PERIODIC_INTERVAL:
+            should_save = True
+            last_periodic_save = current_time
+            
+        if should_save:
+            app.state.csv_service.save_record(data)
 
     serial_service.set_on_data_callback(on_sensor_data)
 

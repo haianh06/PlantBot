@@ -31,6 +31,7 @@
 #include <DHT.h>
 #include "SoilSensor.h"
 #include "MyIrrigationPump.h"
+#include "AutomationController.h"
 
 // ─── Pin Configuration ─────────────────────────────────────
 #define DHT_PIN       4     // D4 — DHT22 data pin
@@ -51,6 +52,8 @@ RelayController pumpRelay(PUMP_RELAY, false);  // Active LOW
 RelayController mistRelay(MIST_RELAY, false);  // Active LOW
 RelayController fanRelay(FAN_RELAY, false);  // Active LOW
 RelayController ledRelay(LED_RELAY, false);  // Active LOW
+
+AutomationController autoController(pumpRelay, mistRelay, fanRelay, ledRelay);
 
 // ─── Variables ─────────────────────────────────────────────
 unsigned long lastSendTime = 0;
@@ -78,7 +81,15 @@ void loop() {
     // 1. Đọc và xử lý lệnh từ Serial (nếu có)
     processSerialCommands();
     
-    // 2. Gửi dữ liệu cảm biến định kỳ
+    // 2. Chạy logic tự động hóa (Firmware-side)
+    float temperature = dht.readTemperature();
+    float humidity = dht.readHumidity();
+    int soilMoisture = soilSensor.readPercent();
+    if (!isnan(temperature) && !isnan(humidity)) {
+        autoController.update(temperature, humidity, soilMoisture);
+    }
+
+    // 3. Gửi dữ liệu cảm biến định kỳ
     unsigned long now = millis();
     if (now - lastSendTime >= SEND_INTERVAL) {
         lastSendTime = now;
@@ -113,6 +124,10 @@ void sendSensorData() {
     Serial.print(fanRelay.isOn() ? 1 : 0);
     Serial.print(",\"led\":");
     Serial.print(ledRelay.isOn() ? 1 : 0);
+    Serial.print(",\"stage\":");
+    Serial.print(autoController.getStage());
+    Serial.print(",\"auto\":");
+    Serial.print(autoController.isAutoEnabled() ? 1 : 0);
     Serial.println("}");
 }
 
@@ -136,6 +151,13 @@ void processSerialCommands() {
 // ─── Thực thi lệnh ────────────────────────────────────────
 void executeCommand(String cmd) {
     cmd.trim();
+    
+    if (cmd.startsWith("SET_STAGE:")) {
+        int stage = cmd.substring(10).toInt();
+        autoController.setStage(stage);
+        return;
+    }
+
     cmd.toUpperCase();
     
     if (cmd == "PUMP_ON") {
@@ -154,9 +176,11 @@ void executeCommand(String cmd) {
         ledRelay.turnOn();
     } else if (cmd == "LED_OFF") {
         ledRelay.turnOff();
+    } else if (cmd == "AUTO_ON") {
+        autoController.setAutoMode(true);
+    } else if (cmd == "AUTO_OFF") {
+        autoController.setAutoMode(false);
     } else if (cmd == "STATUS") {
-        // Gửi trạng thái ngay lập tức
         sendSensorData();
     }
-    // Lệnh không hợp lệ → bỏ qua im lặng
 }
