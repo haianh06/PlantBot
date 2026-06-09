@@ -17,7 +17,7 @@ class SensorDataCreate(SensorDataBase):
     pass
 
 class SensorData(SensorDataBase):
-    id: int
+    id: Optional[int] = None
     timestamp: datetime
 
     class Config:

@@ -7,6 +7,7 @@ class CameraInfo(BaseModel):
     """Thông tin trạng thái camera."""
     index: int = Field(description="Camera index")
     is_active: bool = Field(description="Camera đang stream")
+    ai_active: bool = Field(default=False, description="Mô hình AI đang được bật trên camera này")
 
 
 class CameraListResponse(BaseModel):
