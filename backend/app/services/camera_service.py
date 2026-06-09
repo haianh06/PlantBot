@@ -8,6 +8,7 @@ camera_service.py — Quản lý Camera Stream (Multi-Camera)
 """
 
 import cv2
+import numpy as np
 import threading
 import logging
 import time
@@ -37,9 +38,73 @@ class CameraService:
         service.stop_all()  # Tắt tất cả
     """
 
-    def __init__(self):
+    def __init__(self, ai_service=None, serial_service=None):
         self._captures: dict[int, cv2.VideoCapture] = {}
         self._locks: dict[int, threading.Lock] = {}
+        self._ai_service = ai_service
+        self._serial_service = serial_service
+        self._ai_enabled: dict[int, bool] = {0: False, 1: False}
+        
+        # Cấu hình AI Scanner
+        self.ai_scan_interval_n: int = 60  # Nghỉ n giây
+        self.ai_scan_duration_m: int = 10  # Quét m giây
+        self._is_ai_scanning_now: bool = False
+        
+        # Thread chạy ngầm lập lịch AI
+        self._ai_scheduler_running = True
+        self._ai_thread = threading.Thread(target=self._ai_scheduler_loop, daemon=True)
+        self._ai_thread.start()
+
+    def _ai_scheduler_loop(self):
+        """Luồng ngầm chạy liên tục để chuyển đổi trạng thái Quét/Nghỉ."""
+        while self._ai_scheduler_running:
+            any_ai_enabled = any(self._ai_enabled.values())
+            
+            if not any_ai_enabled:
+                self._is_ai_scanning_now = False
+                time.sleep(1)
+                continue
+
+            # Bắt đầu chu kỳ quét (m giây)
+            logger.info(f"AI Scheduler: Bắt đầu quét ({self.ai_scan_duration_m}s)")
+            self._is_ai_scanning_now = True
+            
+            # Tắt đèn LED nếu đèn đang bật
+            was_led_on = False
+            if self._serial_service:
+                sensor_data = self._serial_service.get_latest_data()
+                if sensor_data and sensor_data.led_on:
+                    was_led_on = True
+                    logger.info("AI Scheduler: Tạm tắt đèn LED để quét...")
+                    self._serial_service.send_command("LED_OFF")
+                    time.sleep(1) # Chờ 1s cho camera ổn định sáng
+
+            # Chờ trong suốt thời gian quét
+            # Chia nhỏ thời gian chờ để có thể thoát ngang nếu người dùng tắt AI
+            for _ in range(self.ai_scan_duration_m):
+                if not any(self._ai_enabled.values()):
+                    break
+                time.sleep(1)
+                
+            # Kết thúc chu kỳ quét, bắt đầu nghỉ (n giây)
+            self._is_ai_scanning_now = False
+            logger.info(f"AI Scheduler: Kết thúc quét. Chuyển sang nghỉ ({self.ai_scan_interval_n}s)")
+            
+            # Khôi phục đèn LED
+            if self._serial_service and was_led_on:
+                logger.info("AI Scheduler: Khôi phục lại đèn LED")
+                self._serial_service.send_command("LED_ON")
+                
+            # Chờ trong suốt thời gian nghỉ
+            for _ in range(self.ai_scan_interval_n):
+                if not any(self._ai_enabled.values()):
+                    break
+                time.sleep(1)
+
+    def update_ai_config(self, interval_n: int, duration_m: int):
+        self.ai_scan_interval_n = interval_n
+        self.ai_scan_duration_m = duration_m
+        logger.info(f"Đã cập nhật cấu hình AI: Nghỉ {interval_n}s, Quét {duration_m}s")
 
     def start(self, index: int = 0) -> bool:
         """
@@ -143,6 +208,12 @@ class CameraService:
                     return None
 
 
+
+
+                # Nếu AI đang bật cho camera này VÀ đang trong chu kỳ quét, dự đoán và vẽ box
+                if self._ai_enabled.get(index, False) and self._ai_service and self._is_ai_scanning_now:
+                    frame = self._ai_service.detect_and_draw(frame)
+
                 # Encode frame sang JPEG
                 _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 return jpeg.tobytes()
@@ -152,6 +223,15 @@ class CameraService:
                 return None
 
 
+    def toggle_ai(self, index: int) -> bool:
+        """Bật/tắt AI cho camera index. Trả về trạng thái mới."""
+        current = self._ai_enabled.get(index, False)
+        self._ai_enabled[index] = not current
+        logger.info(f"Đã {'bật' if not current else 'tắt'} AI cho camera {index}")
+        return not current
+
+    def is_ai_enabled(self, index: int) -> bool:
+        return self._ai_enabled.get(index, False)
     def generate_stream(self, index: int = 0) -> Generator[bytes, None, None]:
         """
         Generator tạo MJPEG stream cho StreamingResponse.

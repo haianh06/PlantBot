@@ -7,6 +7,7 @@
  * Tất cả hooks được khởi tạo ở đây và truyền xuống qua props.
  */
 
+import { useState } from 'react';
 import { useSensorData } from './hooks/useSensorData';
 import { usePumpControl } from './hooks/usePumpControl';
 import { useFanControl } from './hooks/useFanControl';
@@ -21,6 +22,7 @@ import { PumpControl } from './components/Controls/PumpControl';
 import { FanControl } from './components/Controls/FanControl';
 import { LedControl } from './components/Controls/LedControl';
 import { StatusBadge } from './components/common/StatusBadge';
+import { GalleryModal } from './components/Gallery/GalleryModal';
 
 import { getExportUrl } from './api/client';
 import './App.css';
@@ -31,8 +33,10 @@ export default function App() {
   const { pumpOn, mistOn, togglePump, toggleMist, isLoading: pumpLoading } = usePumpControl(sensorData);
   const { fanOn, toggleFan, isLoading: fanLoading } = useFanControl(sensorData);
   const { ledOn, toggleLed, isLoading: ledLoading } = useLedControl(sensorData);
-  const { cameras, toggleCamera, getStreamUrl, isActive, isLoading: camLoading } = useCamera();
+  const { cameras, aiConfig, toggleCamera, toggleAi, updateAiConfig, getStreamUrl, isActive, isAiActive, isLoading: camLoading } = useCamera();
   const { systemInfo, reconnect, isLoading: sysLoading } = useSystemInfo();
+
+  const [showGallery, setShowGallery] = useState(false);
 
   // ─── Handlers ─────────────────────────────────
   const handleExport = () => {
@@ -56,6 +60,9 @@ export default function App() {
         </div>
 
         <div className="app-header__actions">
+          <button className="btn btn--sm" onClick={() => setShowGallery(true)}>
+            🖼️ Ảnh Bệnh
+          </button>
           <button className="btn btn--sm" onClick={handleExport}>
             📥 Export CSV
           </button>
@@ -76,9 +83,13 @@ export default function App() {
         {/* Camera — đặt trên cùng */}
         <CameraView
           cameras={cameras}
+          aiConfig={aiConfig}
           toggleCamera={toggleCamera}
+          toggleAi={toggleAi}
+          updateAiConfig={updateAiConfig}
           getStreamUrl={getStreamUrl}
           isActive={isActive}
+          isAiActive={isAiActive}
           isLoading={camLoading}
         />
 
@@ -109,6 +120,11 @@ export default function App() {
           />
         </div>
       </main>
+      
+      {/* Gallery Modal */}
+      {showGallery && (
+        <GalleryModal onClose={() => setShowGallery(false)} />
+      )}
     </div>
   );
 }

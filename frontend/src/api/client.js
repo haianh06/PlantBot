@@ -121,6 +121,10 @@ export const updateCalibration = (dryValue, wetValue) =>
 export const toggleCamera = (index = 0) =>
   request(`/camera/toggle/${index}`, { method: 'POST' });
 
+/** Toggle AI cho camera */
+export const toggleCameraAi = (index = 0) =>
+  request(`/camera/toggle_ai/${index}`, { method: 'POST' });
+
 /** Lấy trạng thái camera */
 export const fetchCameraStatus = () => request('/camera/status');
 
@@ -132,6 +136,24 @@ export const getCameraStreamUrl = (index = 0) =>
   `${API_BASE}/camera/stream/${index}`;
 
 
+
+// ─── AI & Gallery APIs ────────────────────────────────────────
+
+/** Lấy cấu hình lập lịch AI */
+export const fetchAiConfig = () => request('/camera/ai_config');
+
+/** Cập nhật cấu hình lập lịch AI */
+export const updateAiConfig = (interval_n, duration_m) =>
+  request('/camera/ai_config', {
+    method: 'POST',
+    body: JSON.stringify({ interval_n, duration_m }),
+  });
+
+/** Lấy danh sách ảnh phát hiện bệnh */
+export const fetchGalleryImages = () => request('/gallery/');
+
+/** Tạo URL xem ảnh cụ thể */
+export const getGalleryImageUrl = (filename) => `${API_BASE}/gallery/${filename}`;
 
 // ─── WebSocket ──────────────────────────────────────────────
 
