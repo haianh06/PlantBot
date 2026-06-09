@@ -14,6 +14,7 @@ import logging
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from backend.app.schemas.camera_infor import CameraInfo, CameraListResponse
 from backend.app.schemas.message import MessageResponse
@@ -82,6 +83,26 @@ async def toggle_camera_ai(index: int, request: Request):
         return MessageResponse(message=f"Đã bật AI cho camera {index}")
     else:
         return MessageResponse(message=f"Đã tắt AI cho camera {index}")
+
+class AIConfig(BaseModel):
+    interval_n: int
+    duration_m: int
+
+@router.get("/ai_config")
+async def get_ai_config(request: Request):
+    """Lấy cấu hình AI hiện tại."""
+    camera_service = request.app.state.camera_service
+    return {
+        "interval_n": camera_service.ai_scan_interval_n,
+        "duration_m": camera_service.ai_scan_duration_m
+    }
+
+@router.post("/ai_config", response_model=MessageResponse)
+async def update_ai_config(config: AIConfig, request: Request):
+    """Cập nhật cấu hình AI (n, m)."""
+    camera_service = request.app.state.camera_service
+    camera_service.update_ai_config(config.interval_n, config.duration_m)
+    return MessageResponse(message="Đã cập nhật cấu hình lập lịch AI")
 
 @router.get("/status")
 async def camera_status(request: Request):

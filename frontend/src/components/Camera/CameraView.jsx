@@ -4,15 +4,30 @@
  * Hiển thị video stream từ 1 hoặc 2 camera cùng lúc.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import './CameraView.css';
 
-export function CameraView({ cameras, toggleCamera, toggleAi, getStreamUrl, isActive, isAiActive, isLoading }) {
+export function CameraView({ cameras, aiConfig, toggleCamera, toggleAi, updateAiConfig, getStreamUrl, isActive, isAiActive, isLoading }) {
   const [maximizedCam, setMaximizedCam] = useState(null);
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [localN, setLocalN] = useState(60);
+  const [localM, setLocalM] = useState(10);
+
+  useEffect(() => {
+    if (aiConfig) {
+      setLocalN(aiConfig.interval_n);
+      setLocalM(aiConfig.duration_m);
+    }
+  }, [aiConfig]);
 
   const handleToggleMaximize = (index) => {
     setMaximizedCam(maximizedCam === index ? null : index);
+  };
+  
+  const handleSaveAiConfig = () => {
+    updateAiConfig(localN, localM);
+    setShowAiSettings(false);
   };
 
   return (
@@ -95,13 +110,55 @@ export function CameraView({ cameras, toggleCamera, toggleAi, getStreamUrl, isAc
                     Camera 2 — USB
                   </div>
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)' }} />
-                  <div className="camera-view__ai-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="camera-view__ai-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                     <span style={{ fontSize: '0.75rem' }}>AI</span>
                     <ToggleSwitch
                       checked={isAiActive(1)}
                       onChange={() => toggleAi(1)}
                       disabled={isLoading['ai_1']}
                     />
+                    <button 
+                      className="btn btn--icon" 
+                      style={{ padding: '4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', marginLeft: '4px' }}
+                      onClick={() => setShowAiSettings(!showAiSettings)}
+                      title="Cài đặt AI Scanner"
+                    >
+                      ⚙️
+                    </button>
+                    {showAiSettings && (
+                      <div className="camera-view__ai-settings card" style={{
+                        position: 'absolute', 
+                        top: '110%', 
+                        left: '0', 
+                        zIndex: 10, 
+                        padding: '12px',
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        minWidth: '200px'
+                      }}>
+                        <h4 style={{ margin: '0 0 12px 0', fontSize: '0.85rem' }}>Cấu hình AI Scanner</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.8rem' }}>Nghỉ (s):</span>
+                          <input 
+                            type="number" 
+                            style={{ width: '60px', padding: '4px', background: 'var(--bg-color)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                            value={localN} 
+                            onChange={(e) => setLocalN(Number(e.target.value))} 
+                          />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.8rem' }}>Quét (s):</span>
+                          <input 
+                            type="number" 
+                            style={{ width: '60px', padding: '4px', background: 'var(--bg-color)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                            value={localM} 
+                            onChange={(e) => setLocalM(Number(e.target.value))} 
+                          />
+                        </div>
+                        <button className="btn btn--sm" style={{ width: '100%', justifyContent: 'center' }} onClick={handleSaveAiConfig}>Lưu</button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button

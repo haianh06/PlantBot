@@ -137,6 +137,24 @@ export const getCameraStreamUrl = (index = 0) =>
 
 
 
+// ─── AI & Gallery APIs ────────────────────────────────────────
+
+/** Lấy cấu hình lập lịch AI */
+export const fetchAiConfig = () => request('/camera/ai_config');
+
+/** Cập nhật cấu hình lập lịch AI */
+export const updateAiConfig = (interval_n, duration_m) =>
+  request('/camera/ai_config', {
+    method: 'POST',
+    body: JSON.stringify({ interval_n, duration_m }),
+  });
+
+/** Lấy danh sách ảnh phát hiện bệnh */
+export const fetchGalleryImages = () => request('/gallery/');
+
+/** Tạo URL xem ảnh cụ thể */
+export const getGalleryImageUrl = (filename) => `${API_BASE}/gallery/${filename}`;
+
 // ─── WebSocket ──────────────────────────────────────────────
 
 /**

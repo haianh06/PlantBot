@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
     ai_service = AIService(model_path=model_path)
     app.state.ai_service = ai_service
 
-    camera_service = CameraService(ai_service=ai_service)
+    camera_service = CameraService(ai_service=ai_service, serial_service=serial_service)
     app.state.camera_service = camera_service
     logger.info("✅ Camera Service sẵn sàng")
 
@@ -122,6 +122,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes, fan_routes, led_routes, gallery_routes
+
 # ─── Include Routers ─────────────────────────────────────────
 app.include_router(sensor_routes.router)
 app.include_router(pump_routes.router)
@@ -129,6 +131,7 @@ app.include_router(fan_routes.router)
 app.include_router(led_routes.router)
 app.include_router(camera_routes.router)
 app.include_router(system_routes.router)
+app.include_router(gallery_routes.router)
 
 
 # ─── Root Endpoint ───────────────────────────────────────────
