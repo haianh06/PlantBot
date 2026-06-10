@@ -7,6 +7,8 @@ Endpoints:
   POST /api/system/connect       — Kết nối/ngắt kết nối Arduino
   GET  /api/system/calibration   — Lấy thông số calibration hiện tại
   POST /api/system/calibration   — Cập nhật thông số calibration
+  GET  /api/system/growth        — Lấy cấu hình giai đoạn tăng trưởng
+  POST /api/system/growth        — Cập nhật cấu hình giai đoạn tăng trưởng
 """
 
 import logging
@@ -16,7 +18,8 @@ from fastapi import APIRouter, Request
 from backend.app.schemas.system_infor import SystemInfo, ConnectRequest
 from backend.app.schemas.calibration import CalibrationData
 from backend.app.schemas.message import MessageResponse
-from backend.app.config import get_calibration, update_calibration
+from backend.app.schemas.growth import GrowthSettings
+from backend.app.config import get_calibration, update_calibration, get_growth_settings, update_growth_settings
 from backend.app.services.serial_service import SerialService
 
 logger = logging.getLogger(__name__)
@@ -77,6 +80,21 @@ async def disconnect_serial(request: Request):
     serial_service: SerialService = request.app.state.serial_service
     serial_service.disconnect()
     return MessageResponse(message="Đã ngắt kết nối Arduino")
+
+
+# ─── Growth Settings ──────────────────────────────────────────
+
+@router.get("/growth", response_model=GrowthSettings)
+async def get_growth_config_route():
+    """Lấy cấu hình giai đoạn tăng trưởng và ngày trồng."""
+    return get_growth_settings()
+
+
+@router.post("/growth", response_model=GrowthSettings)
+async def update_growth_config_route(data: GrowthSettings):
+    """Cập nhật ngày trồng và cấu hình giai đoạn."""
+    updated = update_growth_settings(data.model_dump())
+    return updated
 
 
 # ─── Calibration ─────────────────────────────────────────────

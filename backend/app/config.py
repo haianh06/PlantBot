@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # Data
     CSV_FILE_PATH: str = Field(default="data/sensor_data.csv", description="Đường dẫn file CSV")
-    SENSOR_READ_INTERVAL: float = Field(default=2.0, description="Interval đọc sensor (giây)")
+    SENSOR_READ_INTERVAL: float = Field(default=1.0, description="Interval đọc sensor (giây)")
 
     # Camera
     CAMERA_INDEX: int = Field(default=0, description="Camera index mặc định")
@@ -94,3 +94,27 @@ def update_calibration(dry_value: int, wet_value: int) -> dict:
     }
     save_json_settings(settings)
     return settings["sensor_calibration"]
+
+def get_growth_settings() -> dict:
+    """Lấy thông tin cấu hình tăng trưởng từ settings.json."""
+    settings = load_json_settings()
+    return settings.get("data", {
+        "planting_date": "2026-06-10",
+        "is_tracking": True,
+        "current_crop": "Bok Choy",
+        "growth_config": {
+            "stage1_days": 5,
+            "stage2_days": 12,
+            "stage3_days": 25
+        }
+    })
+
+def update_growth_settings(data: dict) -> dict:
+    """Cập nhật thông tin cấu hình tăng trưởng vào settings.json."""
+    settings = load_json_settings()
+    if "data" not in settings:
+        settings["data"] = {}
+    
+    settings["data"].update(data)
+    save_json_settings(settings)
+    return settings["data"]
