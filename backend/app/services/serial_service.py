@@ -230,6 +230,8 @@ class SerialService:
                     mist_on=bool(data.get("mist", 0)),
                     fan_on=bool(data.get("fan", 0)),
                     led_on=bool(data.get("led", 0)),
+                    safe_mode=bool(data.get("safe_mode", False)),
+                    error_code=int(data.get("error_code", 0)),
                     timestamp=get_timestamp(),
                 )
 

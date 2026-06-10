@@ -23,6 +23,7 @@ import { FanControl } from './components/Controls/FanControl';
 import { LedControl } from './components/Controls/LedControl';
 import { StatusBadge } from './components/common/StatusBadge';
 import { GalleryModal } from './components/Gallery/GalleryModal';
+import { SafeModeBanner } from './components/common/SafeModeBanner';
 
 import { getExportUrl } from './api/client';
 import './App.css';
@@ -42,6 +43,9 @@ export default function App() {
   const handleExport = () => {
     window.open(getExportUrl(), '_blank');
   };
+
+  const safeMode = sensorData?.safe_mode || false;
+  const errorCode = sensorData?.error_code || 0;
 
   // ─── Render ───────────────────────────────────
   return (
@@ -93,6 +97,9 @@ export default function App() {
           isLoading={camLoading}
         />
 
+        {/* Cảnh báo an toàn (nếu có) */}
+        <SafeModeBanner safeMode={safeMode} errorCode={errorCode} />
+
         {/* Sensor Cards + Chart */}
         <Dashboard
           sensorData={sensorData}
@@ -107,16 +114,19 @@ export default function App() {
             togglePump={togglePump}
             toggleMist={toggleMist}
             isLoading={pumpLoading}
+            safeMode={safeMode}
           />
           <FanControl
             fanOn={fanOn}
             toggleFan={toggleFan}
             isLoading={fanLoading}
+            safeMode={safeMode}
           />
           <LedControl
             ledOn={ledOn}
             toggleLed={toggleLed}
             isLoading={ledLoading}
+            safeMode={safeMode}
           />
         </div>
       </main>

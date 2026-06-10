@@ -7,7 +7,7 @@
 
 import './PumpControl.css';
 
-function DeviceCard({ icon, name, isOn, onToggle, isLoading, onLabel, offLabel }) {
+function DeviceCard({ icon, name, isOn, onToggle, isLoading, onLabel, offLabel, isDisabled }) {
   return (
     <div className={`pump-control__card card ${isOn ? 'pump-control__card--active' : ''}`}>
       <div className="pump-control__icon">{icon}</div>
@@ -21,7 +21,7 @@ function DeviceCard({ icon, name, isOn, onToggle, isLoading, onLabel, offLabel }
       <button
         className={`pump-control__button ${isOn ? 'pump-control__button--on' : 'pump-control__button--off'}`}
         onClick={onToggle}
-        disabled={isLoading}
+        disabled={isLoading || isDisabled}
       >
         {isLoading ? (
           <span className="spinner" />
@@ -33,7 +33,7 @@ function DeviceCard({ icon, name, isOn, onToggle, isLoading, onLabel, offLabel }
   );
 }
 
-export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading }) {
+export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading, safeMode }) {
   return (
     <div className="pump-control animate-fade-in">
       <DeviceCard
@@ -44,6 +44,7 @@ export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading 
         isLoading={isLoading?.pump}
         onLabel="Bật Bơm"
         offLabel="Tắt Bơm"
+        isDisabled={safeMode}
       />
       <DeviceCard
         icon="🌫️"
@@ -53,6 +54,7 @@ export function PumpControl({ pumpOn, mistOn, togglePump, toggleMist, isLoading 
         isLoading={isLoading?.mist}
         onLabel="Bật Sương"
         offLabel="Tắt Sương"
+        isDisabled={safeMode}
       />
     </div>
   );

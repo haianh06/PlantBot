@@ -6,7 +6,7 @@
 
 import './LedControl.css';
 
-export function LedControl({ ledOn, toggleLed, isLoading }) {
+export function LedControl({ ledOn, toggleLed, isLoading, safeMode }) {
   return (
     <>
       {/* Đèn */}
@@ -22,7 +22,7 @@ export function LedControl({ ledOn, toggleLed, isLoading }) {
         <button
           className={`led-control__button ${ledOn ? 'led-control__button--on' : 'led-control__button--off'}`}
           onClick={toggleLed}
-          disabled={isLoading?.led}
+          disabled={isLoading?.led || safeMode}
         >
           {isLoading?.led ? (
             <span className="spinner" />

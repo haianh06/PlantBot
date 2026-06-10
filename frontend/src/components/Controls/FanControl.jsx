@@ -6,10 +6,10 @@
 
 import './FanControl.css';
 
-export function FanControl({ fanOn, mistOn, toggleFan, toggleMist, isLoading }) {
+export function FanControl({ fanOn, mistOn, toggleFan, toggleMist, isLoading, safeMode }) {
   return (
     <>
-      {/* Máy bơm nước */}
+      {/* Quạt */}
       <div className={`fan-control__card card ${fanOn ? 'fan-control__card--active' : ''}`}>
         <div className="fan-control__icon">🍃</div>
         <h3 className="fan-control__name">Quạt</h3>
@@ -22,7 +22,7 @@ export function FanControl({ fanOn, mistOn, toggleFan, toggleMist, isLoading }) 
         <button
           className={`fan-control__button ${fanOn ? 'fan-control__button--on' : 'fan-control__button--off'}`}
           onClick={toggleFan}
-          disabled={isLoading?.fan}
+          disabled={isLoading?.fan || safeMode}
         >
           {isLoading?.fan ? (
             <span className="spinner" />

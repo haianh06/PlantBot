@@ -36,6 +36,14 @@ async def control_led(command: LedCommand, request: Request):
             success=False,
         )
 
+    # Kiểm tra Safe Mode
+    latest_data = serial_service.get_latest_data()
+    if latest_data and getattr(latest_data, "safe_mode", False):
+        return MessageResponse(
+            message="Hệ thống đang trong chế độ an toàn (Safe Mode). Không thể điều khiển thủ công.",
+            success=False,
+        )
+
     # Map command → Serial command string
     cmd_map = {
         ("led", "on"): "LED_ON",
