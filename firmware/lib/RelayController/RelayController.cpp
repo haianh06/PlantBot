@@ -1,8 +1,8 @@
 /**
- * MyIrrigationPump.cpp — Implementation Relay Controller
+ * RelayController.cpp — Implementation Relay Controller
  */
 
-#include "MyIrrigationPump.h"
+#include "RelayController.h"
 
 RelayController::RelayController(uint8_t pin, bool activeLow)
     : _pin(pin), _activeLow(activeLow), _state(false) {}

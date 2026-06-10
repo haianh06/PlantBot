@@ -39,10 +39,10 @@
 // ─── Object Instances ──────────────────────────────────────
 DHT dht(DHT_PIN, DHT_TYPE);
 SoilSensor soilSensor(SOIL_PIN);
-RelayController pumpRelay(PUMP_RELAY, true);  // Active LOW
-RelayController mistRelay(MIST_RELAY, true);  // Active LOW
-RelayController fanRelay(FAN_RELAY, true);  // Active LOW
-RelayController ledRelay(LED_RELAY, true);  // Active LOW
+RelayController pumpRelay(PUMP_RELAY, false);  // Active LOW
+RelayController mistRelay(MIST_RELAY, false);  // Active LOW
+RelayController fanRelay(FAN_RELAY, false);  // Active LOW
+RelayController ledRelay(LED_RELAY, false);  // Active LOW
 
 // ─── Variables ─────────────────────────────────────────────
 unsigned long lastSendTime = 0;

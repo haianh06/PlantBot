@@ -1,5 +1,5 @@
 /**
- * MyIrrigationPump.h — Relay Controller
+ * RelayController.h — Relay Controller
  * 
  * Điều khiển relay module cho máy bơm nước / phun sương.
  * Hỗ trợ cả Active LOW và Active HIGH relay.
@@ -8,8 +8,8 @@
  * Active HIGH: HIGH = bật relay, LOW = tắt relay
  */
 
-#ifndef MY_IRRIGATION_PUMP_H
-#define MY_IRRIGATION_PUMP_H
+#ifndef RELAY_CONTROLLER_H
+#define RELAY_CONTROLLER_H
 
 #include <Arduino.h>
 
@@ -43,4 +43,4 @@ private:
     bool _state; // true = đang bật
 };
 
-#endif // MY_IRRIGATION_PUMP_H
+#endif // RELAY_CONTROLLER_H
