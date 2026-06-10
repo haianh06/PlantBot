@@ -22,7 +22,8 @@ from backend.app.config import PROJECT_ROOT
 logger = logging.getLogger(__name__)
 
 # Header columns cho file CSV
-CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on", "stage"]
+CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on"]
+
 
 class CSVService:
     """
@@ -107,6 +108,4 @@ class CSVService:
             with open(self._file_path, "r", encoding="utf-8") as f:
                 return sum(1 for _ in f) - 1  # Trừ header
         except IOError:
-            return 0
-Error:
             return 0
