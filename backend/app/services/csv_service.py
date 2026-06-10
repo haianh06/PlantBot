@@ -22,7 +22,7 @@ from backend.app.config import PROJECT_ROOT
 logger = logging.getLogger(__name__)
 
 # Header columns cho file CSV
-CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on"]
+CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on", "growth_stage"]
 
 
 class CSVService:
@@ -71,6 +71,7 @@ class CSVService:
                         data.mist_on,
                         data.fan_on,
                         data.led_on,
+                        data.growth_stage,
                     ])
             except IOError as e:
                 logger.error(f"Lỗi ghi CSV: {e}")

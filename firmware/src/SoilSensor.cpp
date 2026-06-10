@@ -1,5 +1,5 @@
 /**
- * SoilSensor.cpp — Implementation cảm biến độ ẩm đất
+ * SoilSensorii.cpp — Implementation cảm biến độ ẩm đất
  */
 
 #include "SoilSensor.h"

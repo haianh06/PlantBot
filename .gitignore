@@ -168,6 +168,4 @@ data/boychok_dataset
 ### Logs ###
 *.log
 *.err
-
-# Ignore .pt model files for PyTorch/Ultalytics
-*.pt
+.obsidian/

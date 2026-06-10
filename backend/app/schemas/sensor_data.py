@@ -8,8 +8,7 @@ class SensorDataBase(BaseModel):
     soil_moisture: int = Field(description="Độ ẩm đất (%)")
     pump_on: bool = Field(default=False, description="Máy bơm đang bật")
     mist_on: bool = Field(default=False, description="Phun sương đang bật")
-    fan_on: bool = Field(default=False, description="Quạt đang bật")
-    led_on: bool = Field(default=False, description="Đèn đang bật")
+    growth_stage: int = Field(default=1, description="Giai đoạn tăng trưởng (1-4)")
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 
 class SensorDataCreate(SensorDataBase):

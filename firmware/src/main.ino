@@ -5,7 +5,7 @@
  *   1. Đọc cảm biến DHT22 (nhiệt độ + độ ẩm không khí)
  *   2. Đọc cảm biến Capacitive Soil Moisture (độ ẩm đất)
  *   3. Điều khiển 3 relay (bơm nước + phun sương + quạt) qua lệnh Serial
- *   4. Gửi dữ liệu JSON qua Serial mỗi 2 giây
+ *   4. Gửi dữ liệu JSON qua Serial mỗi 1 giây (High-Fidelity cho ML)
  * 
  * Sơ đồ kết nối:
  *   D4  → DHT22 (data)
@@ -22,6 +22,8 @@
 
 #include <DHT.h>
 #include "SoilSensor.h"
+#include "MyIrrigationPump.h"
+#include "AutomationController.h"
 #include "RelayController.h"
 
 // ─── Pin Configuration ─────────────────────────────────────
@@ -34,7 +36,7 @@
 #define LED_RELAY     8     // D8 — Relay đèn
 
 // ─── Timing ────────────────────────────────────────────────
-#define SEND_INTERVAL 2000  // Gửi dữ liệu mỗi 2 giây (ms)
+#define SEND_INTERVAL 1000   // 1 giây cố định cho ML data fidelity
 
 // ─── Object Instances ──────────────────────────────────────
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -72,6 +74,7 @@ void loop() {
     
     // 2. Gửi dữ liệu cảm biến định kỳ
     unsigned long now = millis();
+
     if (now - lastSendTime >= SEND_INTERVAL) {
         lastSendTime = now;
         sendSensorData();
@@ -130,25 +133,39 @@ void executeCommand(String cmd) {
     cmd.trim();
     cmd.toUpperCase();
     
+    bool stateChanged = false;
+
     if (cmd == "PUMP_ON") {
         pumpRelay.turnOn();
+        stateChanged = true;
     } else if (cmd == "PUMP_OFF") {
         pumpRelay.turnOff();
+        stateChanged = true;
     } else if (cmd == "MIST_ON") {
         mistRelay.turnOn();
+        stateChanged = true;
     } else if (cmd == "MIST_OFF") {
         mistRelay.turnOff();
-    } else if (cmd == "FAN_OFF") {
-        fanRelay.turnOff();
+        stateChanged = true;
     } else if (cmd == "FAN_ON") {
         fanRelay.turnOn();
+        stateChanged = true;
+    } else if (cmd == "FAN_OFF") {
+        fanRelay.turnOff();
+        stateChanged = true;
     } else if (cmd == "LED_ON") {
         ledRelay.turnOn();
+        stateChanged = true;
     } else if (cmd == "LED_OFF") {
         ledRelay.turnOff();
+        stateChanged = true;
     } else if (cmd == "STATUS") {
-        // Gửi trạng thái ngay lập tức
-        sendSensorData();
+        stateChanged = true;
     }
-    // Lệnh không hợp lệ → bỏ qua im lặng
+
+    // Gửi phản hồi ngay lập tức nếu có thay đổi trạng thái
+    if (stateChanged) {
+        sendSensorData();
+        lastSendTime = millis();
+    }
 }
