@@ -34,6 +34,9 @@ export function SystemLogs({ logs = [] }) {
               } else if (log.type === 'recovery') {
                 typeClass = 'system-log--recovery';
                 badge = '[KHÔI PHỤC]';
+              } else if (log.type === 'auto_action') {
+                typeClass = 'system-log--auto';
+                badge = '[TỰ ĐỘNG]';
               }
 
               return (

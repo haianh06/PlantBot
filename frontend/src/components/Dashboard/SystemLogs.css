@@ -74,6 +74,15 @@
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
 }
 
+.system-log--auto {
+  color: #60a5fa; /* blue-400 */
+}
+
+.system-log--auto .system-log__badge {
+  color: #3b82f6; /* blue-500 */
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+}
+
 .system-logs__count {
   font-size: 0.75rem;
   color: var(--text-secondary);

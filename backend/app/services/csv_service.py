@@ -95,6 +95,32 @@ class CSVService:
             except IOError as e:
                 logger.error(f"Lỗi ghi CSV: {e}")
 
+    def backup_and_reset(self) -> str:
+        """
+        Backup file CSV hiện tại bằng cách đổi tên thành sensor_data_backup_<timestamp>.csv
+        và tạo một file CSV rỗng mới.
+        """
+        import time
+        with self._lock:
+            try:
+                if self._file_path.exists():
+                    timestamp = int(time.time())
+                    backup_name = f"sensor_data_backup_{timestamp}.csv"
+                    backup_path = self._file_path.with_name(backup_name)
+                    self._file_path.rename(backup_path)
+                    logger.info(f"Đã backup file CSV cũ sang: {backup_path}")
+                    
+                    # Tạo file mới với header
+                    with open(self._file_path, "w", newline="", encoding="utf-8") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(CSV_HEADERS)
+                    logger.info(f"Đã tạo file CSV mới sau khi backup: {self._file_path}")
+                    return backup_name
+            except Exception as e:
+                logger.error(f"Lỗi backup_and_reset CSV: {e}")
+                raise e
+            return ""
+
     def get_history(self, limit: int = 100) -> list[dict]:
         """
         Đọc N bản ghi cuối cùng từ file CSV.

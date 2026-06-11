@@ -1,17 +1,52 @@
-/**
- * Sidebar.jsx — Sidebar: Kết nối + Calibration
- * ================================================
- * Section 1: Thông tin kết nối Serial
- * Section 2: Calibration cảm biến
- */
-
 import { ConnectionInfo } from './ConnectionInfo';
-import { CalibrationPanel } from '../Settings/CalibrationPanel';
 import './Sidebar.css';
 
-export function Sidebar({ systemInfo, onReconnect, isLoading }) {
+export function Sidebar({ 
+  systemInfo, 
+  onReconnect, 
+  isLoading,
+  autoMode,
+  growthPreset,
+  onToggleAutoMode,
+  onPresetChange
+}) {
   return (
     <aside className="sidebar">
+      {/* Section: Chăm Sóc Tự Động */}
+      <div className="sidebar__section">
+        <h3 className="section-title">🤖 Chăm Sóc Tự Động</h3>
+        <div className="automation-settings">
+          {/* Master Toggle */}
+          <div className="automation-setting-row">
+            <span className="setting-label">Chế độ tự động</span>
+            <label className="ml-switch">
+              <input
+                type="checkbox"
+                checked={autoMode}
+                onChange={(e) => onToggleAutoMode(e.target.checked)}
+              />
+              <span className="ml-switch__slider"></span>
+            </label>
+          </div>
+
+          {/* Preset Selector */}
+          <div className="automation-setting-row">
+            <span className="setting-label">Preset gieo trồng</span>
+            <select 
+              className="preset-select"
+              value={growthPreset}
+              onChange={(e) => onPresetChange(e.target.value)}
+            >
+              <option value="baby">Cải thìa non (25 ngày)</option>
+              <option value="mature">Cải thìa già (35 ngày)</option>
+              <option value="custom">Tùy chọn số ngày</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="sidebar__divider" />
+
       {/* Section: Kết nối */}
       <div className="sidebar__section">
         <h3 className="section-title">📡 Kết nối Arduino</h3>
@@ -20,14 +55,6 @@ export function Sidebar({ systemInfo, onReconnect, isLoading }) {
           onReconnect={onReconnect}
           isLoading={isLoading}
         />
-      </div>
-
-      <div className="sidebar__divider" />
-
-      {/* Section: Calibration */}
-      <div className="sidebar__section">
-        <h3 className="section-title">⚙️ Calibration</h3>
-        <CalibrationPanel />
       </div>
     </aside>
   );

@@ -83,6 +83,17 @@ class SerialService:
             # Chờ Arduino reset sau khi mở Serial
             time.sleep(2)
 
+            # Đồng bộ cấu hình hiệu chuẩn xuống Arduino
+            try:
+                from backend.app.config import get_calibration
+                cal = get_calibration()
+                dry = cal.get("soil_moisture_dry", 520)
+                wet = cal.get("soil_moisture_wet", 260)
+                self._serial.write(f"CALIB {dry} {wet}\n".encode("utf-8"))
+                logger.info(f"Đã đồng bộ hiệu chuẩn lúc kết nối: CALIB {dry} {wet}")
+            except Exception as ex:
+                logger.error(f"Lỗi gửi lệnh hiệu chuẩn khởi động: {ex}")
+
             # Bắt đầu background reader thread
             self._running = True
             self._reader_thread = threading.Thread(
@@ -251,6 +262,7 @@ class SerialService:
                     temperature=data.get("temp", -1),
                     humidity=data.get("humi", -1),
                     soil_moisture=data.get("soil", -1),
+                    soil_raw=int(data.get("soil_raw", 0)),
                     pump_on=bool(data.get("pump", 0)),
                     mist_on=bool(data.get("mist", 0)),
                     fan_on=bool(data.get("fan", 0)),
@@ -259,6 +271,7 @@ class SerialService:
                     error_code=int(data.get("error_code", 0)),
                     env_code=int(data.get("env_code", 0)),
                     offline=bool(data.get("offline", 0)),
+                    dev_auto=bool(data.get("dev_auto", 1)),
                     timestamp=get_timestamp(),
                 )
 

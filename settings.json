@@ -4,8 +4,8 @@
         "baudrate": 9600
     },
     "sensor_calibration": {
-        "soil_moisture_dry": 500,
-        "soil_moisture_wet": 150
+        "soil_moisture_dry": 466,
+        "soil_moisture_wet": 154
     },
     "camera": {
         "indices": [
@@ -13,6 +13,8 @@
         ],
         "default_index": 0
     },
+    "auto_mode": true,
+    "growth_preset": "custom",
     "data": {
         "csv_file_path": "data/sensor_data.csv",
         "sensor_read_interval": 1.0,

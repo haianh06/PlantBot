@@ -63,6 +63,12 @@ async def control_pump(command: PumpCommand, request: Request):
     # Gửi lệnh xuống Arduino
     success = serial_service.send_command(serial_cmd)
 
+    if success:
+        try:
+            request.app.state.automation_service.register_override(command.device)
+        except Exception as e:
+            logger.error(f"Lỗi đăng ký override cho {command.device}: {e}")
+
     device_names = {"pump": "Máy bơm", "mist": "Phun sương", "fan": "Quạt"}
     device_name = device_names.get(command.device, command.device)
     action_name = "bật" if command.action == "on" else "tắt"

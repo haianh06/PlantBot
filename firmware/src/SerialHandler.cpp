@@ -1,0 +1,131 @@
+#include "SerialHandler.h"
+#include "Globals.h"
+
+// ─── Đọc cảm biến và gửi JSON qua Serial ──────────────────
+void sendSensorData(float temperature, float humidity, int soilMoisturePercent, int soilMoistureRaw) {
+    if (isnan(temperature) || isnan(humidity)) {
+        temperature = -1;
+        humidity = -1;
+    }
+    
+    Serial.print("{\"temp\":");
+    Serial.print(temperature, 1);
+    Serial.print(",\"humi\":");
+    Serial.print(humidity, 1);
+    Serial.print(",\"soil\":");
+    Serial.print(soilMoisturePercent);
+    Serial.print(",\"soil_raw\":");
+    Serial.print(soilMoistureRaw);
+    Serial.print(",\"pump\":");
+    Serial.print(pumpRelay.isOn() ? 1 : 0);
+    Serial.print(",\"mist\":");
+    Serial.print(mistRelay.isOn() ? 1 : 0);
+    Serial.print(",\"fan\":");
+    Serial.print(fanRelay.isOn() ? 1 : 0);
+    Serial.print(",\"led\":");
+    Serial.print(ledRelay.isOn() ? 1 : 0);
+    Serial.print(",\"safe_mode\":");
+    Serial.print(isSafeMode ? "true" : "false");
+    Serial.print(",\"error_code\":");
+    Serial.print(currentErrorCode);
+    Serial.print(",\"env_code\":");
+    Serial.print(currentEnvCode);
+    Serial.print(",\"offline\":");
+    Serial.print(isOfflineMode ? 1 : 0);
+    Serial.print(",\"dev_auto\":");
+    Serial.print(isAutoMode ? 1 : 0);
+    Serial.println("}");
+}
+
+// ─── Xử lý lệnh từ Serial ─────────────────────────────────
+void processSerialCommands() {
+    while (Serial.available() > 0) {
+        char c = Serial.read();
+        
+        if (c == '\n' || c == '\r') {
+            if (inputBuffer.length() > 0) {
+                executeCommand(inputBuffer);
+                inputBuffer = "";
+            }
+        } else {
+            inputBuffer += c;
+        }
+    }
+}
+
+// ─── Thực thi lệnh ────────────────────────────────────────
+void executeCommand(String cmd) {
+    cmd.trim();
+    cmd.toUpperCase();
+    
+    // Cập nhật nhịp tim khi có bất kỳ lệnh nào từ PC
+    lastHeartbeatTime = millis();
+
+    if (cmd == "HB") {
+        // Tín hiệu Heartbeat, không xử lý gì thêm
+        return;
+    }
+
+    bool stateChanged = false;
+
+    // Chặn lệnh nếu đang ở Safe Mode (cho phép lệnh hiệu chuẩn đi qua để tự phục hồi)
+    if (isSafeMode && cmd != "STATUS" && !cmd.startsWith("CALIB ")) {
+        return;
+    }
+
+    if (cmd.startsWith("CALIB ")) {
+        int firstSpace = cmd.indexOf(' ');
+        int secondSpace = cmd.indexOf(' ', firstSpace + 1);
+        if (firstSpace != -1 && secondSpace != -1) {
+            int dry = cmd.substring(firstSpace + 1, secondSpace).toInt();
+            int wet = cmd.substring(secondSpace + 1).toInt();
+            if (dry > 0 && wet > 0) {
+                soilSensor.setCalibration(dry, wet);
+                stateChanged = true;
+            }
+        }
+    } else if (cmd == "PUMP_ON") {
+        pumpRelay.turnOnWithTimeout(15000UL, 300000UL);
+        stateChanged = true;
+    } else if (cmd == "PUMP_OFF") {
+        pumpRelay.turnOff();
+        stateChanged = true;
+    } else if (cmd == "MIST_ON") {
+        mistRelay.turnOn();
+        stateChanged = true;
+    } else if (cmd == "MIST_OFF") {
+        mistRelay.turnOff();
+        stateChanged = true;
+    } else if (cmd == "FAN_ON") {
+        fanRelay.turnOn();
+        stateChanged = true;
+    } else if (cmd == "FAN_OFF") {
+        fanRelay.turnOff();
+        stateChanged = true;
+    } else if (cmd == "LED_ON") {
+        ledRelay.turnOn();
+        stateChanged = true;
+    } else if (cmd == "LED_OFF") {
+        ledRelay.turnOff();
+        stateChanged = true;
+    } else if (cmd == "AUTO_ON") {
+        isAutoMode = true;
+        stateChanged = true;
+    } else if (cmd == "AUTO_OFF") {
+        isAutoMode = false;
+        mistRelay.clearCyclicMode();
+        fanRelay.clearCyclicMode();
+        stateChanged = true;
+    } else if (cmd == "STATUS") {
+        stateChanged = true;
+    }
+
+    if (stateChanged) {
+        // Gửi lập tức trạng thái hiện tại (có thể là cached sensor data)
+        float t = dht.readTemperature();
+        float h = dht.readHumidity();
+        int s = soilSensor.readPercent();
+        sendSensorData(t, h, s, analogRead(SOIL_PIN));
+        lastSendTime = millis(); // Reset chu kỳ
+    }
+}

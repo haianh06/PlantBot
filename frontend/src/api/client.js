@@ -168,3 +168,36 @@ export function createSensorWebSocket() {
   return new WebSocket(wsUrl);
 }
 
+
+// ─── Automation, Presets & Calendar APIs ────────────────────
+
+/** Lấy cấu hình tự động hóa */
+export const fetchAutoMode = () => request('/system/auto-mode');
+
+/** Cập nhật bật/tắt chế độ tự động hóa */
+export const updateAutoMode = (enabled) =>
+  request('/system/auto-mode', {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
+  });
+
+/** Thay đổi Preset gieo trồng (mature / baby / custom) */
+export const updatePreset = (preset) =>
+  request('/system/preset', {
+    method: 'POST',
+    body: JSON.stringify({ preset }),
+  });
+
+/** Lấy danh sách lịch trình gieo trồng (Calendar) */
+export const fetchCalendar = () => request('/system/calendar');
+
+/** Bắt đầu lứa rau mới */
+export const startNewBatch = (preset, plantingDate, growthConfig = null) =>
+  request('/system/new-batch', {
+    method: 'POST',
+    body: JSON.stringify({
+      preset,
+      planting_date: plantingDate,
+      growth_config: growthConfig,
+    }),
+  });
