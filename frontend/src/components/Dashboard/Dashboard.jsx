@@ -7,10 +7,11 @@
 
 import { SensorCard } from './SensorCard';
 import { SensorChart } from './SensorChart';
+import { SystemLogs } from './SystemLogs';
 import { formatTemperature, formatPercent } from '../../utils/formatters';
 import './Dashboard.css';
 
-export function Dashboard({ sensorData, history }) {
+export function Dashboard({ sensorData, history, logs }) {
   return (
     <div className="dashboard">
       {/* Sensor Cards — 3 cột */}
@@ -49,6 +50,9 @@ export function Dashboard({ sensorData, history }) {
 
       {/* Biểu đồ lịch sử */}
       <SensorChart history={history} />
+
+      {/* Nhật ký sự kiện hệ thống */}
+      <SystemLogs logs={logs} />
     </div>
   );
 }

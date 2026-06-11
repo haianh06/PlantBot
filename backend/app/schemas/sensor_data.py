@@ -12,6 +12,7 @@ class SensorDataBase(BaseModel):
     led_on: bool = Field(default=False, description="Đèn đang bật")
     safe_mode: bool = Field(default=False, description="Chế độ an toàn")
     error_code: int = Field(default=0, description="Mã lỗi phần cứng")
+    env_code: int = Field(default=0, description="Mã trạng thái môi trường cực đoan")
     growth_stage: int = Field(default=1, description="Giai đoạn tăng trưởng (1-4)")
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 

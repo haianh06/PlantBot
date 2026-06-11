@@ -7,7 +7,7 @@
  * Tất cả hooks được khởi tạo ở đây và truyền xuống qua props.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSensorData } from './hooks/useSensorData';
 import { usePumpControl } from './hooks/usePumpControl';
 import { useFanControl } from './hooks/useFanControl';
@@ -38,6 +38,59 @@ export default function App() {
   const { systemInfo, reconnect, isLoading: sysLoading } = useSystemInfo();
 
   const [showGallery, setShowGallery] = useState(false);
+  const [logs, setLogs] = useState([]);
+  const prevData = useRef(null);
+
+  // ─── Logic Event Log Tracking ─────────────────
+  useEffect(() => {
+    if (!sensorData) return;
+
+    const timeStr = new Date().toLocaleTimeString('vi-VN');
+
+    // Lần đầu nhận dữ liệu
+    if (!prevData.current) {
+      prevData.current = sensorData;
+      return;
+    }
+
+    const prev = prevData.current;
+    const cur = sensorData;
+    let newLog = null;
+
+    // 1. Lỗi cảm biến (Sanity checks)
+    if (!prev.safe_mode && cur.safe_mode) {
+      let msg = 'Kích hoạt chế độ bảo vệ an toàn.';
+      if (cur.error_code === 1) msg = 'Phát hiện lỗi Cảm biến DHT22 (Nhiệt độ/Độ ẩm). Đã ngắt phun sương và quạt chạy nền.';
+      if (cur.error_code === 2) msg = 'Phát hiện lỗi Cảm biến Độ ẩm đất. Đã khóa hệ thống máy bơm nước.';
+      newLog = { time: timeStr, type: 'sanity', message: msg };
+    } 
+    else if (prev.safe_mode && !cur.safe_mode) {
+      newLog = { time: timeStr, type: 'recovery', message: 'Cảm biến đã hoạt động bình thường. Hệ thống tự động thoát Safe Mode.' };
+    }
+
+    // 2. Điều kiện cực đoan (Edge cases) - chỉ quan sát nếu không trong Safe Mode
+    if (!cur.safe_mode) {
+      if (prev.env_code !== cur.env_code) {
+        if (cur.env_code === 1) {
+          newLog = { time: timeStr, type: 'edgecase', message: 'Phát hiện Sốc nhiệt (> 40.0°C). Tự động bật quạt và phun sương tuần hoàn để làm mát.' };
+        } else if (cur.env_code === 2) {
+          newLog = { time: timeStr, type: 'edgecase', message: 'Phát hiện Úng khí (> 85.0% độ ẩm). Tự động ngắt phun sương và bật quạt để tản ẩm.' };
+        } else if (cur.env_code === 0 && prev.env_code !== 0) {
+          newLog = { time: timeStr, type: 'recovery', message: 'Điều kiện môi trường đã trở lại bình thường. Đã khôi phục các thiết bị về trạng thái tự động.' };
+        }
+      }
+    }
+
+    if (newLog) {
+      setLogs((prevLogs) => {
+        const nextLogs = [...prevLogs, newLog];
+        return nextLogs.length > 50 ? nextLogs.slice(-50) : nextLogs;
+      });
+    }
+
+    prevData.current = cur;
+  }, [sensorData]);
+
 
   // ─── Handlers ─────────────────────────────────
   const handleExport = () => {
@@ -104,6 +157,7 @@ export default function App() {
         <Dashboard
           sensorData={sensorData}
           history={history}
+          logs={logs}
         />
 
         {/* Device Controls */}

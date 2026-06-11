@@ -1,0 +1,84 @@
+.system-logs__terminal {
+  background: rgba(4, 8, 15, 0.85);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: 'Courier New', Courier, monospace, 'Fira Code';
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.system-logs__empty {
+  color: var(--text-tertiary);
+  text-align: center;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+.system-logs__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.system-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  text-align: left;
+}
+
+.system-log__time {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.system-log__badge {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.system-log__message {
+  color: var(--text-primary);
+}
+
+/* Color schemes for terminal messages */
+.system-log--sanity {
+  color: #f87171; /* red-400 */
+}
+
+.system-log--sanity .system-log__badge {
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.system-log--edgecase {
+  color: #fbbf24; /* amber-400 */
+}
+
+.system-log--edgecase .system-log__badge {
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+.system-log--recovery {
+  color: #34d399; /* emerald-400 */
+}
+
+.system-log--recovery .system-log__badge {
+  color: #10b981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.system-logs__count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}

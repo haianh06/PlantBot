@@ -10,3 +10,4 @@ TODO Phase 2:
 Hiện tại chỉ là placeholder — sẽ implement sau khi
 hệ thống manual control hoạt động ổn định.
 """
+

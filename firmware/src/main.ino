@@ -47,6 +47,9 @@ int currentErrorCode = NO_ERROR;
 unsigned long soilErrorStartTime = 0;
 bool soilPotentialError = false;
 bool envOverriding = false;
+unsigned long dhtErrorStartTime = 0;
+bool dhtPotentialError = false;
+int currentEnvCode = 0; // 0 = Normal, 1 = Heat Shock, 2 = Humidity Crisis
 
 // ─── Setup ─────────────────────────────────────────────────
 void setup() {
@@ -103,22 +106,32 @@ void loop() {
 
 // ─── Logic An Toàn ────────────────────────────────────────
 void sanityCheck(float temp, float humi, int soilMoistureRaw) {
-    // Case 1: Lỗi DHT22
-    if (isnan(temp) || isnan(humi) || temp <= -100.0) {
-        if (currentErrorCode != DHT_ERROR) {
-            isSafeMode = true;
-            currentErrorCode = DHT_ERROR;
-            mistRelay.forceLock();
-            fanRelay.setCyclicMode(300000UL, 1500000UL); // 5 phút on, 25 phút off
+    bool dhtIsNormal = !(isnan(temp) || isnan(humi) || temp <= -100.0);
+    bool soilIsNormal = !(soilMoistureRaw <= 5 || soilMoistureRaw >= 1020);
+
+    // Case 1: Lỗi DHT22 (chờ 30s)
+    if (!dhtIsNormal) {
+        if (!dhtPotentialError) {
+            dhtPotentialError = true;
+            dhtErrorStartTime = millis();
+        } else if (millis() - dhtErrorStartTime >= 30000UL) {
+            if (currentErrorCode != DHT_ERROR) {
+                isSafeMode = true;
+                currentErrorCode = DHT_ERROR;
+                mistRelay.forceLock();
+                fanRelay.setCyclicMode(300000UL, 1500000UL); // 5 phút on, 25 phút off
+            }
         }
+    } else {
+        dhtPotentialError = false;
     }
 
-    // Case 2: Lỗi cảm biến đất (0 hoặc 1023)
-    if (soilMoistureRaw <= 5 || soilMoistureRaw >= 1020) {
+    // Case 2: Lỗi cảm biến đất (0 hoặc 1023, chờ 30s)
+    if (!soilIsNormal) {
         if (!soilPotentialError) {
             soilPotentialError = true;
             soilErrorStartTime = millis();
-        } else if (millis() - soilErrorStartTime >= 60000UL) {
+        } else if (millis() - soilErrorStartTime >= 30000UL) {
             if (currentErrorCode != SOIL_ERROR) {
                 isSafeMode = true;
                 currentErrorCode = SOIL_ERROR;
@@ -128,34 +141,48 @@ void sanityCheck(float temp, float humi, int soilMoistureRaw) {
     } else {
         soilPotentialError = false;
     }
+
+    // Tự động khôi phục nếu cả hai cảm biến đã bình thường trở lại
+    if (isSafeMode && dhtIsNormal && soilIsNormal) {
+        isSafeMode = false;
+        currentErrorCode = NO_ERROR;
+        pumpRelay.clearLock();
+        mistRelay.clearLock();
+        fanRelay.clearLock();
+        fanRelay.clearCyclicMode(); // Hủy bỏ chế độ tuần hoàn an toàn của quạt
+    }
 }
 
 void evaluateEnvironment(float temp, float humi, int soilPercent) {
     if (isSafeMode) return; // Nếu đã lỗi cảm biến thì ưu tiên Sanity Check
 
-    bool isExtreme = false;
+    bool isHeatShock = (temp > 40.0 && !isnan(temp));
+    bool isHumidityCrisis = (humi > 85.0 && !isnan(humi));
+    bool isExtreme = isHeatShock || isHumidityCrisis;
 
-    // Case 3: Sốc nhiệt
-    if (temp > 30.0 && !isnan(temp)) {
-        fanRelay.turnOn();
-        mistRelay.setCyclicMode(30000UL, 120000UL); // 30s on, 2m off
-        isExtreme = true;
-    } 
-    // Case 4: Úng khí
-    else if (humi > 85.0 && !isnan(humi)) {
-        mistRelay.clearCyclicMode();
-        mistRelay.turnOff();
-        fanRelay.turnOn();
-        isExtreme = true;
-    }
-
-    // Khôi phục nếu hết điều kiện cực đoan
     if (isExtreme) {
         envOverriding = true;
-    } else if (envOverriding) {
-        envOverriding = false;
-        mistRelay.clearCyclicMode();
-        fanRelay.turnOff();
+        if (isHumidityCrisis) {
+            // Độ ẩm quá cao: Tắt phun sương ngay lập tức và bật quạt
+            mistRelay.clearCyclicMode();
+            mistRelay.turnOff();
+            fanRelay.turnOn();
+            currentEnvCode = 2; // Úng khí
+        } else if (isHeatShock) {
+            // Quá nhiệt: Bật quạt và phun sương tuần hoàn để làm mát
+            fanRelay.turnOn();
+            if (currentEnvCode != 1) {
+                mistRelay.setCyclicMode(30000UL, 120000UL); // 30s on, 2m off
+            }
+            currentEnvCode = 1; // Sốc nhiệt
+        }
+    } else {
+        currentEnvCode = 0;
+        if (envOverriding) {
+            envOverriding = false;
+            mistRelay.clearCyclicMode();
+            fanRelay.turnOff();
+        }
     }
     
     // Case 5: Khô hạn -> Safe Pumping
@@ -191,6 +218,8 @@ void sendSensorData(float temperature, float humidity, int soilMoisture) {
     Serial.print(isSafeMode ? "true" : "false");
     Serial.print(",\"error_code\":");
     Serial.print(currentErrorCode);
+    Serial.print(",\"env_code\":");
+    Serial.print(currentEnvCode);
     Serial.println("}");
 }
 
