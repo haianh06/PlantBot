@@ -94,6 +94,17 @@ class SerialService:
             except Exception as ex:
                 logger.error(f"Lỗi gửi lệnh hiệu chuẩn khởi động: {ex}")
 
+            # Đồng bộ trạng thái tracking xuống Arduino
+            try:
+                from backend.app.config import get_growth_settings
+                growth_settings = get_growth_settings()
+                is_tracking = growth_settings.get("is_tracking", True)
+                cmd = "TRACKING_ON" if is_tracking else "TRACKING_OFF"
+                self._serial.write(f"{cmd}\n".encode("utf-8"))
+                logger.info(f"Đã đồng bộ trạng thái tracking lúc kết nối: {cmd}")
+            except Exception as ex:
+                logger.error(f"Lỗi gửi lệnh tracking khởi động: {ex}")
+
             # Bắt đầu background reader thread
             self._running = True
             self._reader_thread = threading.Thread(
@@ -272,6 +283,7 @@ class SerialService:
                     env_code=int(data.get("env_code", 0)),
                     offline=bool(data.get("offline", 0)),
                     dev_auto=bool(data.get("dev_auto", 1)),
+                    is_tracking=bool(data.get("tracking", 1)),
                     timestamp=get_timestamp(),
                 )
 

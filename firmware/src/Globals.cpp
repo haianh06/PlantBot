@@ -26,3 +26,4 @@ unsigned long offlineLedCycleStartTime = 0;
 unsigned long offlinePumpLastTime = 0;
 bool offlineLedState = true;
 bool isAutoMode = true;
+bool isTracking = true;

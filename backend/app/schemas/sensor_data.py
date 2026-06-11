@@ -16,6 +16,7 @@ class SensorDataBase(BaseModel):
     env_code: int = Field(default=0, description="Mã trạng thái môi trường cực đoan")
     offline: bool = Field(default=False, description="Trạng thái ngoại tuyến Failsafe")
     dev_auto: bool = Field(default=True, description="Trạng thái tự động trên board")
+    is_tracking: bool = Field(default=True, description="Trạng thái gieo trồng trên board")
     growth_stage: int = Field(default=1, description="Giai đoạn tăng trưởng (1-4)")
     timestamp: str = Field(default="", description="Thời điểm đọc dữ liệu (ISO 8601)")
 

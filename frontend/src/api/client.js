@@ -201,3 +201,14 @@ export const startNewBatch = (preset, plantingDate, growthConfig = null) =>
       growth_config: growthConfig,
     }),
   });
+
+/** Lấy cấu hình tăng trưởng (bao gồm trạng thái is_tracking) */
+export const fetchGrowthConfig = () => request('/system/growth');
+
+/** Cập nhật cấu hình tăng trưởng */
+export const updateGrowthConfig = (config) =>
+  request('/system/growth', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+

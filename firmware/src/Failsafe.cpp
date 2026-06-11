@@ -3,6 +3,17 @@
 
 // ─── Logic An Toàn ────────────────────────────────────────
 void sanityCheck(float temp, float humi, int soilMoistureRaw) {
+    if (!isTracking) {
+        if (isSafeMode) {
+            isSafeMode = false;
+            currentErrorCode = NO_ERROR;
+            pumpRelay.clearLock();
+            mistRelay.clearLock();
+            fanRelay.clearLock();
+            fanRelay.clearCyclicMode();
+        }
+        return;
+    }
     bool dhtIsNormal = !(isnan(temp) || isnan(humi) || temp <= -100.0);
     bool soilIsNormal = !(soilMoistureRaw <= 5 || soilMoistureRaw >= 1020);
 
@@ -82,13 +93,13 @@ void checkConnection() {
             offlineLedCycleStartTime = now;
             offlinePumpLastTime = now;
             offlineLedState = true;
-            if (isAutoMode) {
+            if (isAutoMode && isTracking) {
                 ledRelay.turnOn(); // Mặc định bật đèn khi mất kết nối
             }
         }
 
-        // Chỉ chạy lịch tự trị nếu Auto Mode được bật
-        if (isAutoMode) {
+        // Chỉ chạy lịch tự trị nếu Auto Mode được bật và đang gieo trồng
+        if (isAutoMode && isTracking) {
             // --- Lịch đèn quang hợp ngoại tuyến (Bật 14h / Tắt 10h) ---
             // 14h = 50,400,000 ms, 10h = 36,000,000 ms
             unsigned long elapsedLed = now - offlineLedCycleStartTime;
@@ -127,6 +138,7 @@ void checkConnection() {
 }
 
 void evaluateEnvironment(float temp, float humi, int soilPercent) {
+    if (!isTracking) return; // Không đánh giá môi trường khi không gieo trồng
     if (isSafeMode) return; // Nếu đã lỗi cảm biến thì ưu tiên Sanity Check
 
     bool isHeatShock = (temp > 40.0 && !isnan(temp));

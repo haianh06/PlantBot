@@ -34,5 +34,6 @@ extern unsigned long offlineLedCycleStartTime;
 extern unsigned long offlinePumpLastTime;
 extern bool offlineLedState;
 extern bool isAutoMode;
+extern bool isTracking;
 
 #endif

@@ -127,6 +127,11 @@ class AutomationService:
 
                 # 2. Lấy thông tin cảm biến và giai đoạn hiện tại
                 stage = get_current_stage()
+                if stage == 0:
+                    # Chưa trồng: Tạm dừng chạy tự động hóa thiết bị
+                    time.sleep(5)
+                    continue
+
                 latest_data = self.serial_service.get_latest_data()
                 if not latest_data:
                     time.sleep(5)

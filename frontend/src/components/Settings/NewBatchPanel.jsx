@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { startNewBatch } from '../../api/client';
+import { startNewBatch, fetchGrowthConfig, updateGrowthConfig } from '../../api/client';
 import { CalibrationPanel } from './CalibrationPanel';
 import './NewBatchPanel.css';
 
@@ -16,12 +16,70 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
 
+  // Trạng thái gieo trồng
+  const [isTracking, setIsTracking] = useState(true);
+  const [fullGrowthConfig, setFullGrowthConfig] = useState(null);
+
   // Update preset state if prop changes
   useEffect(() => {
     if (currentPreset) {
       setPreset(currentPreset);
     }
   }, [currentPreset]);
+
+  // Lấy cấu hình gieo trồng từ Backend khi load component
+  useEffect(() => {
+    fetchGrowthConfig()
+      .then((data) => {
+        setIsTracking(data.is_tracking);
+        setPlantingDate(data.planting_date);
+        setFullGrowthConfig(data);
+        if (data.growth_config) {
+          const s1 = data.growth_config.stage1_days || 5;
+          const s2 = (data.growth_config.stage2_days || 17) - s1;
+          const s3 = (data.growth_config.stage3_days || 32) - (data.growth_config.stage2_days || 17);
+          setS1Days(s1);
+          setS2Days(s2);
+          setS3Days(s3);
+        }
+      })
+      .catch((err) => console.error("Lỗi lấy cấu hình gieo trồng:", err));
+  }, []);
+
+  const handleToggleTracking = async () => {
+    if (!fullGrowthConfig) return;
+    setIsSubmitting(true);
+    setStatusMsg({ text: '', type: '' });
+    try {
+      const nextTracking = !isTracking;
+      const payload = {
+        planting_date: fullGrowthConfig.planting_date,
+        is_tracking: nextTracking,
+        current_crop: fullGrowthConfig.current_crop || 'Bok Choy',
+        growth_config: {
+          stage1_days: fullGrowthConfig.growth_config?.stage1_days || 5,
+          stage2_days: fullGrowthConfig.growth_config?.stage2_days || 17,
+          stage3_days: fullGrowthConfig.growth_config?.stage3_days || 32,
+        }
+      };
+
+      const res = await updateGrowthConfig(payload);
+      setIsTracking(res.is_tracking);
+      setFullGrowthConfig(res);
+      setStatusMsg({
+        text: nextTracking 
+          ? '🌱 Đã bắt đầu gieo trồng. Hệ thống tự động đang hoạt động và Safe Mode đã được kích hoạt!'
+          : '🛑 Đã dừng gieo trồng. Bạn có thể tự do điều khiển thiết bị, Safe Mode trên mạch đã được giải phóng.',
+        type: 'success'
+      });
+      setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000);
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ text: '❌ Lỗi hệ thống: Không thể thay đổi trạng thái gieo trồng.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Tính toán lộ trình ngày dự kiến dựa trên preset / custom
   const getRoadmap = () => {
@@ -103,6 +161,30 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
   return (
     <div className="new-batch-container animate-fade-in">
       
+      {/* 0. Trạng thái gieo trồng hiện tại */}
+      <div className="crop-status-card card" style={{ marginBottom: '24px', border: isTracking ? '1px solid rgba(46, 204, 113, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)', background: 'var(--bg-card)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {isTracking ? '🌱 Trạng thái: Đang gieo trồng' : '🛑 Trạng thái: Chưa gieo trồng'}
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              {isTracking 
+                ? 'Hệ thống đang chạy tự động và theo dõi chu kỳ của cải thìa. Failsafe (Safe Mode) đang hoạt động bảo vệ thiết bị.' 
+                : 'Đang ở chế độ rảnh/thử nghiệm. Bạn có thể tự do điều khiển thiết bị thủ công ở Dashboard mà không bị Safe Mode khóa mạch.'}
+            </p>
+          </div>
+          <button 
+            className={`btn ${isTracking ? 'btn--danger' : 'btn--primary'}`}
+            onClick={handleToggleTracking}
+            disabled={isSubmitting}
+            style={{ minWidth: '160px', justifyContent: 'center' }}
+          >
+            {isTracking ? '🛑 Dừng gieo trồng' : '🌱 Bắt đầu trồng'}
+          </button>
+        </div>
+      </div>
+
       {/* 1. Form Khởi tạo lứa rau mới */}
       <div className="new-batch-card card">
         <div className="card__header">

@@ -91,9 +91,16 @@ async def get_growth_config_route():
 
 
 @router.post("/growth", response_model=GrowthSettings)
-async def update_growth_config_route(data: GrowthSettings):
+async def update_growth_config_route(data: GrowthSettings, request: Request):
     """Cập nhật ngày trồng và cấu hình giai đoạn."""
     updated = update_growth_settings(data.model_dump())
+    
+    # Đồng bộ trạng thái tracking xuống Arduino
+    serial_service = request.app.state.serial_service
+    if serial_service and serial_service.is_connected:
+        cmd = "TRACKING_ON" if data.is_tracking else "TRACKING_OFF"
+        serial_service.send_command(cmd)
+        
     return updated
 
 
@@ -320,6 +327,11 @@ async def start_new_batch_route(body: NewBatchRequest, request: Request):
         automation_service._override_until = {"pump": 0.0, "mist": 0.0, "fan": 0.0, "led": 0.0}
         automation_service._last_watered_hour = -1
         automation_service._last_watered_date = ""
+
+    # 5. Đồng bộ trạng thái TRACKING_ON xuống Arduino
+    serial_service = request.app.state.serial_service
+    if serial_service and serial_service.is_connected:
+        serial_service.send_command("TRACKING_ON")
 
     return {
         "status": "success",

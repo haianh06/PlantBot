@@ -34,6 +34,8 @@ void sendSensorData(float temperature, float humidity, int soilMoisturePercent, 
     Serial.print(isOfflineMode ? 1 : 0);
     Serial.print(",\"dev_auto\":");
     Serial.print(isAutoMode ? 1 : 0);
+    Serial.print(",\"tracking\":");
+    Serial.print(isTracking ? 1 : 0);
     Serial.println("}");
 }
 
@@ -68,8 +70,8 @@ void executeCommand(String cmd) {
 
     bool stateChanged = false;
 
-    // Chặn lệnh nếu đang ở Safe Mode (cho phép lệnh hiệu chuẩn đi qua để tự phục hồi)
-    if (isSafeMode && cmd != "STATUS" && !cmd.startsWith("CALIB ")) {
+    // Chặn lệnh nếu đang ở Safe Mode (cho phép lệnh hiệu chuẩn và tắt tracking đi qua để tự phục hồi)
+    if (isSafeMode && cmd != "STATUS" && !cmd.startsWith("CALIB ") && cmd != "TRACKING_OFF") {
         return;
     }
 
@@ -84,6 +86,18 @@ void executeCommand(String cmd) {
                 stateChanged = true;
             }
         }
+    } else if (cmd == "TRACKING_ON") {
+        isTracking = true;
+        stateChanged = true;
+    } else if (cmd == "TRACKING_OFF") {
+        isTracking = false;
+        isSafeMode = false;
+        currentErrorCode = NO_ERROR;
+        pumpRelay.clearLock();
+        mistRelay.clearLock();
+        fanRelay.clearLock();
+        fanRelay.clearCyclicMode();
+        stateChanged = true;
     } else if (cmd == "PUMP_ON") {
         pumpRelay.turnOnWithTimeout(15000UL, 300000UL);
         stateChanged = true;
