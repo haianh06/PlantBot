@@ -44,6 +44,7 @@ class SerialService:
         self._lock = threading.Lock()
         self._running = False
         self._reader_thread: Optional[threading.Thread] = None
+        self._heartbeat_thread: Optional[threading.Thread] = None
         self._on_data_callback: Optional[Callable[[SensorData], None]] = None
 
     # ─── Connection Management ──────────────────────────────
@@ -91,6 +92,14 @@ class SerialService:
             )
             self._reader_thread.start()
 
+            # Bắt đầu background heartbeat thread
+            self._heartbeat_thread = threading.Thread(
+                target=self._heartbeat_loop,
+                name="serial-heartbeat",
+                daemon=True,
+            )
+            self._heartbeat_thread.start()
+
             logger.info(f"Đã kết nối Serial: {port} @ {baudrate} baud")
             return True
 
@@ -105,6 +114,9 @@ class SerialService:
 
         if self._reader_thread and self._reader_thread.is_alive():
             self._reader_thread.join(timeout=3)
+
+        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
+            self._heartbeat_thread.join(timeout=3)
 
         if self._serial and self._serial.is_open:
             try:
@@ -198,7 +210,20 @@ class SerialService:
 
         return None
 
-    # ─── Background Reader ──────────────────────────────────
+    # ─── Background Heartbeat & Reader ──────────────────────
+
+    def _heartbeat_loop(self) -> None:
+        """Background thread: gửi định kỳ lệnh HB mỗi 30 giây để duy trì kết nối."""
+        logger.info("Serial heartbeat thread bắt đầu")
+        while self._running:
+            if self.is_connected:
+                self.send_command("HB")
+            # Chờ 30 giây nhưng hỗ trợ tắt luồng nhanh bằng cách chia nhỏ sleep
+            for _ in range(30):
+                if not self._running:
+                    break
+                time.sleep(1)
+        logger.info("Serial heartbeat thread kết thúc")
 
     def _read_loop(self) -> None:
         """
@@ -233,6 +258,7 @@ class SerialService:
                     safe_mode=bool(data.get("safe_mode", False)),
                     error_code=int(data.get("error_code", 0)),
                     env_code=int(data.get("env_code", 0)),
+                    offline=bool(data.get("offline", 0)),
                     timestamp=get_timestamp(),
                 )
 

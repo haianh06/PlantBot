@@ -39,7 +39,8 @@ String inputBuffer = "";
 enum ErrorCode {
     NO_ERROR = 0,
     DHT_ERROR = 1,
-    SOIL_ERROR = 2
+    SOIL_ERROR = 2,
+    SOIL_OVERWATER_ERROR = 3
 };
 
 bool isSafeMode = false;
@@ -50,6 +51,13 @@ bool envOverriding = false;
 unsigned long dhtErrorStartTime = 0;
 bool dhtPotentialError = false;
 int currentEnvCode = 0; // 0 = Normal, 1 = Heat Shock, 2 = Humidity Crisis
+
+// Biến điều khiển Offline Failsafe
+unsigned long lastHeartbeatTime = 0;
+bool isOfflineMode = false;
+unsigned long offlineLedCycleStartTime = 0;
+unsigned long offlinePumpLastTime = 0;
+bool offlineLedState = true;
 
 // ─── Setup ─────────────────────────────────────────────────
 void setup() {
@@ -62,6 +70,7 @@ void setup() {
     fanRelay.begin();
     ledRelay.begin();
     
+    lastHeartbeatTime = millis(); // Khởi tạo mốc heartbeat
     Serial.println("{\"status\":\"ready\"}");
 }
 
@@ -71,13 +80,17 @@ void executeCommand(String cmd);
 void sendSensorData(float temp, float humi, int soil);
 void sanityCheck(float temp, float humi, int soilMoistureRaw);
 void evaluateEnvironment(float temp, float humi, int soilPercent);
+void checkConnection();
 
 // ─── Loop ──────────────────────────────────────────────────
 void loop() {
-    // 1. Xử lý lệnh
+    // 1. Kiểm tra kết nối & Failsafe ngoại tuyến
+    checkConnection();
+
+    // 2. Xử lý lệnh
     processSerialCommands();
     
-    // 2. Cập nhật trạng thái Relay (Timeout, Cooldown, Cyclic)
+    // 3. Cập nhật trạng thái Relay (Timeout, Cooldown, Cyclic)
     pumpRelay.update();
     mistRelay.update();
     fanRelay.update();
@@ -142,14 +155,85 @@ void sanityCheck(float temp, float humi, int soilMoistureRaw) {
         soilPotentialError = false;
     }
 
-    // Tự động khôi phục nếu cả hai cảm biến đã bình thường trở lại
-    if (isSafeMode && dhtIsNormal && soilIsNormal) {
-        isSafeMode = false;
-        currentErrorCode = NO_ERROR;
-        pumpRelay.clearLock();
-        mistRelay.clearLock();
-        fanRelay.clearLock();
-        fanRelay.clearCyclicMode(); // Hủy bỏ chế độ tuần hoàn an toàn của quạt
+    // Tính % độ ẩm phục vụ kiểm tra úng nước
+    int soilPercent = soilSensor.readPercent();
+
+    // Case 3: Bảo vệ đất quá ẩm (>85%)
+    if (soilIsNormal && soilPercent > 85) {
+        if (currentErrorCode != SOIL_OVERWATER_ERROR) {
+            isSafeMode = true;
+            currentErrorCode = SOIL_OVERWATER_ERROR;
+            pumpRelay.forceLock();
+        }
+    }
+
+    // Tự động khôi phục
+    if (isSafeMode) {
+        // Khôi phục khi cảm biến hoạt động bình thường trở lại (trừ lỗi quá ẩm)
+        if (dhtIsNormal && soilIsNormal && currentErrorCode != SOIL_OVERWATER_ERROR) {
+            isSafeMode = false;
+            currentErrorCode = NO_ERROR;
+            pumpRelay.clearLock();
+            mistRelay.clearLock();
+            fanRelay.clearLock();
+            fanRelay.clearCyclicMode();
+        }
+        // Khôi phục khi lỗi quá ẩm đã hạ về dưới 80%
+        else if (currentErrorCode == SOIL_OVERWATER_ERROR && soilIsNormal && soilPercent <= 80) {
+            isSafeMode = false;
+            currentErrorCode = NO_ERROR;
+            pumpRelay.clearLock();
+        }
+    }
+}
+
+// ─── Kiểm tra kết nối & Failsafe Ngoại tuyến ──────────────
+void checkConnection() {
+    unsigned long now = millis();
+
+    // Nếu quá 60 giây không nhận được tín hiệu Serial
+    if (now - lastHeartbeatTime >= 60000UL) {
+        if (!isOfflineMode) {
+            isOfflineMode = true;
+            offlineLedCycleStartTime = now;
+            offlinePumpLastTime = now;
+            offlineLedState = true;
+            ledRelay.turnOn(); // Mặc định bật đèn khi mất kết nối
+        }
+
+        // --- Lịch đèn quang hợp ngoại tuyến (Bật 14h / Tắt 10h) ---
+        // 14h = 50,400,000 ms, 10h = 36,000,000 ms
+        unsigned long elapsedLed = now - offlineLedCycleStartTime;
+        if (offlineLedState) {
+            if (elapsedLed >= 50400000UL) {
+                ledRelay.turnOff();
+                offlineLedState = false;
+                offlineLedCycleStartTime = now;
+            } else {
+                ledRelay.turnOn();
+            }
+        } else {
+            if (elapsedLed >= 36000000UL) {
+                ledRelay.turnOn();
+                offlineLedState = true;
+                offlineLedCycleStartTime = now;
+            } else {
+                ledRelay.turnOff();
+            }
+        }
+
+        // --- Lịch bơm nước ngoại tuyến (Tưới 20s mỗi 6 tiếng) ---
+        // 6 tiếng = 21,600,000 ms
+        if (now - offlinePumpLastTime >= 21600000UL) {
+            if (!pumpRelay.isOn() && !pumpRelay.isCooldown() && !pumpRelay.isLocked()) {
+                pumpRelay.turnOnWithTimeout(20000UL, 300000UL); // Bơm 20s, 5m cooldown
+                offlinePumpLastTime = now;
+            }
+        }
+    } else {
+        if (isOfflineMode) {
+            isOfflineMode = false;
+        }
     }
 }
 
@@ -220,6 +304,8 @@ void sendSensorData(float temperature, float humidity, int soilMoisture) {
     Serial.print(currentErrorCode);
     Serial.print(",\"env_code\":");
     Serial.print(currentEnvCode);
+    Serial.print(",\"offline\":");
+    Serial.print(isOfflineMode ? 1 : 0);
     Serial.println("}");
 }
 
@@ -244,6 +330,14 @@ void executeCommand(String cmd) {
     cmd.trim();
     cmd.toUpperCase();
     
+    // Cập nhật nhịp tim khi có bất kỳ lệnh nào từ PC
+    lastHeartbeatTime = millis();
+
+    if (cmd == "HB") {
+        // Tín hiệu Heartbeat, không xử lý gì thêm
+        return;
+    }
+
     bool stateChanged = false;
 
     // Chặn lệnh nếu đang ở Safe Mode

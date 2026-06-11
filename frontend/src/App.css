@@ -370,3 +370,38 @@ body::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Offline Banner ─────────────────────────────────────── */
+.offline-banner {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.offline-banner__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.offline-banner__content {
+  flex: 1;
+  text-align: left;
+}
+
+.offline-banner__title {
+  color: var(--accent-orange);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.offline-banner__desc {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}

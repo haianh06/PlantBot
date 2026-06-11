@@ -62,10 +62,19 @@ export default function App() {
       let msg = 'Kích hoạt chế độ bảo vệ an toàn.';
       if (cur.error_code === 1) msg = 'Phát hiện lỗi Cảm biến DHT22 (Nhiệt độ/Độ ẩm). Đã ngắt phun sương và quạt chạy nền.';
       if (cur.error_code === 2) msg = 'Phát hiện lỗi Cảm biến Độ ẩm đất. Đã khóa hệ thống máy bơm nước.';
+      if (cur.error_code === 3) msg = 'Phát hiện đất quá ẩm (>85%). Đã khóa hệ thống máy bơm gốc để phòng ngập úng.';
       newLog = { time: timeStr, type: 'sanity', message: msg };
     } 
     else if (prev.safe_mode && !cur.safe_mode) {
-      newLog = { time: timeStr, type: 'recovery', message: 'Cảm biến đã hoạt động bình thường. Hệ thống tự động thoát Safe Mode.' };
+      newLog = { time: timeStr, type: 'recovery', message: 'Hệ thống đã hoạt động bình thường trở lại. Giải phóng Safe Mode.' };
+    }
+
+    // 2. Mất kết nối PC (Offline Failsafe)
+    if (!prev.offline && cur.offline) {
+      newLog = { time: timeStr, type: 'sanity', message: 'Mất kết nối với PC (Timeout 60s). Hệ thống tự kích hoạt chế độ Failsafe ngoại tuyến.' };
+    }
+    else if (prev.offline && !cur.offline) {
+      newLog = { time: timeStr, type: 'recovery', message: 'Đã khôi phục kết nối với PC Backend. Đã trả quyền điều khiển tự động.' };
     }
 
     // 2. Điều kiện cực đoan (Edge cases) - chỉ quan sát nếu không trong Safe Mode
@@ -99,6 +108,7 @@ export default function App() {
 
   const safeMode = sensorData?.safe_mode || false;
   const errorCode = sensorData?.error_code || 0;
+  const offline = sensorData?.offline || false;
 
   // ─── Render ───────────────────────────────────
   return (
@@ -152,6 +162,17 @@ export default function App() {
 
         {/* Cảnh báo an toàn (nếu có) */}
         <SafeModeBanner safeMode={safeMode} errorCode={errorCode} />
+
+        {/* Cảnh báo mất kết nối ngoại tuyến */}
+        {offline && (
+          <div className="offline-banner animate-fade-in">
+            <div className="offline-banner__icon">🔌</div>
+            <div className="offline-banner__content">
+              <h3 className="offline-banner__title">Hệ thống đang chạy ngoại tuyến (Offline Failsafe)</h3>
+              <p className="offline-banner__desc">Arduino mất kết nối với PC quá 60 giây. Thiết bị đang tự duy trì sự sống cho cây (Đèn 14h, Bơm 6h/lần).</p>
+            </div>
+          </div>
+        )}
 
         {/* Sensor Cards + Chart */}
         <Dashboard
