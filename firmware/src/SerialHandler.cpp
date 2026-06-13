@@ -98,8 +98,21 @@ void executeCommand(String cmd) {
         fanRelay.clearLock();
         fanRelay.clearCyclicMode();
         stateChanged = true;
-    } else if (cmd == "PUMP_ON") {
-        pumpRelay.turnOnWithTimeout(15000UL, 300000UL);
+    } else if (cmd.startsWith("PUMP_ON")) {
+        unsigned long timeout = 15000UL;
+        unsigned long cooldown = 300000UL;
+        int spaceIdx = cmd.indexOf(' ');
+        if (spaceIdx != -1) {
+            int secondSpaceIdx = cmd.indexOf(' ', spaceIdx + 1);
+            if (secondSpaceIdx != -1) {
+                timeout = cmd.substring(spaceIdx + 1, secondSpaceIdx).toInt();
+                cooldown = cmd.substring(secondSpaceIdx + 1).toInt();
+            } else {
+                timeout = cmd.substring(spaceIdx + 1).toInt();
+                cooldown = 5000UL; // 5s cooldown mặc định cho lệnh PC
+            }
+        }
+        pumpRelay.turnOnWithTimeout(timeout, cooldown);
         stateChanged = true;
     } else if (cmd == "PUMP_OFF") {
         pumpRelay.turnOff();
@@ -107,7 +120,19 @@ void executeCommand(String cmd) {
     } else if (cmd == "MIST_ON") {
         mistRelay.turnOn();
         stateChanged = true;
+    } else if (cmd.startsWith("MIST_CYCLIC ")) {
+        int spaceIdx = cmd.indexOf(' ');
+        int secondSpaceIdx = cmd.indexOf(' ', spaceIdx + 1);
+        if (spaceIdx != -1 && secondSpaceIdx != -1) {
+            unsigned long onTime = cmd.substring(spaceIdx + 1, secondSpaceIdx).toInt();
+            unsigned long offTime = cmd.substring(secondSpaceIdx + 1).toInt();
+            if (onTime > 0 && offTime > 0) {
+                mistRelay.setCyclicMode(onTime, offTime);
+                stateChanged = true;
+            }
+        }
     } else if (cmd == "MIST_OFF") {
+        mistRelay.clearCyclicMode();
         mistRelay.turnOff();
         stateChanged = true;
     } else if (cmd == "FAN_ON") {

@@ -1,23 +1,34 @@
 import time
 import threading
 import logging
+import os
+from collections import deque
 from datetime import datetime
 from typing import Optional
 
-from backend.app.config import get_auto_mode, get_growth_settings, load_json_settings
+from backend.app.config import load_json_settings, SETTINGS_FILE
 from backend.app.services.serial_service import SerialService
 from backend.app.services.csv_service import CSVService
 
 logger = logging.getLogger(__name__)
 
+# Global cache để tối ưu hóa hàm get_current_stage() tránh đọc đĩa
+_last_stage_mtime = 0.0
+_cached_stage = 1
+
 def get_current_stage() -> int:
+    global _last_stage_mtime, _cached_stage
     try:
-        from backend.app.config import load_json_settings
-        from datetime import datetime
+        mtime = os.path.getmtime(SETTINGS_FILE)
+        if mtime == _last_stage_mtime:
+            return _cached_stage
+            
+        _last_stage_mtime = mtime
         cfg = load_json_settings()
         data_cfg = cfg.get("data", {})
         
         if not data_cfg.get("is_tracking", True):
+            _cached_stage = 0
             return 0
             
         planting_date_str = data_cfg.get("planting_date", "2026-06-10")
@@ -29,12 +40,17 @@ def get_current_stage() -> int:
         s2 = growth_cfg.get("stage2_days", 17)
         s3 = growth_cfg.get("stage3_days", 32)
         
-        if days_passed <= s1: return 1
-        if days_passed <= s2: return 2
-        if days_passed <= s3: return 3
-        return 4
+        if days_passed <= s1:
+            _cached_stage = 1
+        elif days_passed <= s2:
+            _cached_stage = 2
+        elif days_passed <= s3:
+            _cached_stage = 3
+        else:
+            _cached_stage = 4
+        return _cached_stage
     except:
-        return 1
+        return _cached_stage
 
 
 class AutomationService:
@@ -60,6 +76,40 @@ class AutomationService:
         # Lưu vết giờ tưới cuối cùng để tránh kích hoạt tưới lặp lại trong cùng 1 giờ
         self._last_watered_hour = -1
         self._last_watered_date = ""
+
+        # Cấu hình bộ đệm RAM để tránh đọc đĩa liên tục trong luồng chính
+        self._last_settings_mtime = 0.0
+        self._cached_settings = {}
+        self.temp_history = deque(maxlen=60)  # Lưu nhiệt độ trong 10 phút gần nhất (60 điểm đọc)
+
+        # Đọc lịch sử tưới lần đầu từ CSV để khôi phục trạng thái bộ đệm khi restart
+        self._init_last_watered()
+
+    def _init_last_watered(self):
+        """Đọc CSV một lần duy nhất lúc khởi động để lấy mốc giờ tưới cuối."""
+        try:
+            history = self.csv_service.get_history(limit=120)
+            for row in history:
+                ts_str = row.get("timestamp", "")
+                if ts_str and bool(int(row.get("pump_on", 0) or 0)):
+                    # Định dạng: "YYYY-MM-DDTHH:MM:SS+07:00"
+                    parts = ts_str.split("T")
+                    if len(parts) == 2:
+                        date_str = parts[0]
+                        time_part = parts[1]
+                        hour_str = time_part.split(":")[0]
+                        
+                        self._last_watered_hour = int(hour_str)
+                        self._last_watered_date = date_str
+                        logger.info(f"🤖 [Automation Init] Khôi phục lịch sử tưới từ CSV: Ngày {date_str} lúc {hour_str} giờ.")
+                        break
+        except Exception as e:
+            logger.error(f"Lỗi khởi tạo trạng thái tưới từ CSV: {e}")
+
+    def record_temp(self, temp: float):
+        """Lưu trữ nhiệt độ vào bộ đệm RAM để tính trung bình."""
+        if temp > 0:
+            self.temp_history.append(temp)
 
     def reset_overrides(self):
         """Reset tất cả các can thiệp thủ công và thông tin tưới nước để bắt đầu lứa mới sạch sẽ."""
@@ -107,8 +157,20 @@ class AutomationService:
     def _run_loop(self):
         while self._running:
             try:
+                # Đồng bộ thiết lập từ settings.json bằng RAM Cache nếu có thay đổi trên đĩa
+                try:
+                    mtime = os.path.getmtime(SETTINGS_FILE)
+                    if mtime != self._last_settings_mtime:
+                        self._last_settings_mtime = mtime
+                        self._cached_settings = load_json_settings()
+                        logger.info("🤖 [Automation Cache] Thiết lập settings.json đã được nạp lại vào RAM.")
+                except Exception as ex:
+                    logger.error(f"Lỗi kiểm tra cache settings: {ex}")
+
+                auto_mode_enabled = self._cached_settings.get("auto_mode", True)
+
                 # 1. Kiểm tra xem chế độ Auto Mode có bật hay không
-                if not get_auto_mode():
+                if not auto_mode_enabled:
                     # Đảm bảo tắt cờ AUTO trên Arduino
                     latest = self.serial_service.get_latest_data()
                     if latest and getattr(latest, "dev_auto", True):
@@ -139,7 +201,7 @@ class AutomationService:
 
                 humi = latest_data.humidity
                 
-                # ML Optimizer: Phân tích CSV tính nhiệt độ trung bình trong 10 phút gần đây
+                # Temp Optimizer: Phân tích CSV tính nhiệt độ trung bình trong 10 phút gần đây
                 # Nếu trời nóng (> 28°C), nhân hệ số thời gian tưới lên 1.25 (tưới nhiều hơn 25%)
                 temp_factor = 1.0
                 try:
@@ -150,9 +212,9 @@ class AutomationService:
                             avg_temp = sum(temps) / len(temps)
                             if avg_temp > 28.0:
                                 temp_factor = 1.25
-                                logger.info(f"🤖 [ML Optimization] Nhiệt độ TB nóng ({avg_temp:.1f}°C > 28°C), tăng thời gian tưới thêm 25%")
+                                logger.info(f"🤖 [Temp Optimization] Nhiệt độ TB nóng ({avg_temp:.1f}°C > 28°C), tăng thời gian tưới thêm 25%")
                 except Exception as e:
-                    logger.warning(f"Lỗi đọc CSV trong ML Optimizer: {e}")
+                    logger.warning(f"Lỗi đọc CSV trong Temp Optimizer: {e}")
 
                 now = datetime.now()
                 current_hour = now.hour
@@ -209,50 +271,113 @@ class AutomationService:
                             logger.error(f"Lỗi kiểm tra lịch sử tưới trong CSV: {e}")
 
                     if not already_watered and not latest_data.pump_on:
-                        logger.info(f"🤖 [Auto Pump] Kích hoạt tưới giai đoạn {stage} trong {pump_duration} giây.")
-                        self.serial_service.send_command("PUMP_ON")
-                        self._last_watered_hour = current_hour
-                        self._last_watered_date = current_date
+                        soil_moist = latest_data.soil_moisture
                         
-                        # Luồng ngắt bơm sau thời gian chạy chỉ định
-                        def _stop_pump_after(sec):
-                            time.sleep(sec)
-                            if not self.is_overridden("pump") and self.serial_service.is_connected:
-                                self.serial_service.send_command("PUMP_OFF")
-                                logger.info("🤖 [Auto Pump] Tắt bơm tự động hoàn thành.")
-                                
-                        threading.Thread(target=_stop_pump_after, args=(pump_duration,), daemon=True).start()
+                        # Soil Moisture-Gated Logic
+                        if soil_moist > 70:
+                            logger.info(f"🤖 [Smart Gating] Bỏ qua tưới (Skip) vì độ ẩm đất đã cao: {soil_moist}% (>70%)")
+                            self._last_watered_hour = current_hour
+                            self._last_watered_date = current_date
+                        else:
+                            # Xác định số lượng xung tưới (Pulse Watering)
+                            # Ngưỡng:
+                            # Ẩm đất 60% - 70%: Tưới xung ngắn (1 xung 10 giây)
+                            # Ẩm đất < 60%: Tưới đầy đủ (3 xung, mỗi xung 10 giây cách nhau 15 giây)
+                            pulse_count = 3
+                            pulse_duration_ms = 10000
+                            pulse_cooldown_ms = 15000
+                            
+                            if 60 <= soil_moist <= 70:
+                                pulse_count = 1
+                                logger.info(f"🤖 [Smart Gating] Độ ẩm đất trung bình ({soil_moist}%), kích hoạt tưới 1 xung (10s)")
+                            else:
+                                logger.info(f"🤖 [Smart Gating] Độ ẩm đất thấp ({soil_moist}%), kích hoạt tưới đầy đủ ({pulse_count} xung x 10s)")
+                            
+                            self._last_watered_hour = current_hour
+                            self._last_watered_date = current_date
 
-                # 5. Phun sương điều hòa độ ẩm khí (Hysteresis dải trễ tránh chập chờn)
-                # Stage 1 & 3: ẩm khí dưới 75% bật, vượt qua 80% tắt
-                # Stage 2 & 4: ẩm khí dưới 70% bật, vượt qua 75% tắt
-                mist_low = 70
-                mist_high = 75
-                if stage in [1, 3]:
-                    mist_low = 75
-                    mist_high = 80
+                            # Hàm chạy luồng tưới xung
+                            def _run_pulse_watering(count, duration, cooldown):
+                                for i in range(count):
+                                    if not self.is_overridden("pump") and self.serial_service.is_connected:
+                                        logger.info(f"🤖 [Pulse Pump] Xung {i+1}/{count} - Bật bơm trong {duration//1000}s.")
+                                        # Gửi lệnh PUMP_ON kèm duration và cooldown
+                                        self.serial_service.send_command(f"PUMP_ON {duration} {cooldown}")
+                                        # Đợi hết thời gian chạy + thời gian cooldown
+                                        time.sleep((duration + cooldown) / 1000.0)
+                                logger.info("🤖 [Pulse Pump] Hoàn thành toàn bộ chu kỳ tưới xung.")
 
-                if not self.is_overridden("mist"):
-                    if humi > 0:  # Cảm biến bình thường
-                        if humi < mist_low and not latest_data.mist_on:
-                            self.serial_service.send_command("MIST_ON")
-                        elif humi >= mist_high and latest_data.mist_on:
-                            self.serial_service.send_command("MIST_OFF")
+                            threading.Thread(target=_run_pulse_watering, args=(pulse_count, pulse_duration_ms, pulse_cooldown_ms), daemon=True).start()
 
-                # 6. Quạt thông gió
-                # Stage 3: Bật 24/24 trong suốt thời gian bật đèn
-                # Khác: Tắt (quá nhiệt Arduino tự failsafe cứu cánh)
-                should_fan_on = False
-                if stage == 3 and should_led_on:
-                    should_fan_on = True
+                # 5. VPD & Phun sương, Quạt gió tự động
+                temp = latest_data.temperature
+                humi = latest_data.humidity
 
-                if not self.is_overridden("fan"):
-                    if should_fan_on and not latest_data.fan_on:
-                        self.serial_service.send_command("FAN_ON")
-                    elif not should_fan_on and latest_data.fan_on:
-                        self.serial_service.send_command("FAN_OFF")
+                if not self.is_overridden("mist") or not self.is_overridden("fan"):
+                    if temp > 0 and humi > 0:  # Cảm biến bình thường
+                        # A. Tính chỉ số VPD (kPa)
+                        import math
+                        vp_sat = 0.61078 * math.exp((17.27 * temp) / (temp + 237.3))
+                        vpd = vp_sat * (1.0 - (humi / 100.0))
+
+                        # B. Tính điểm đọng sương (Dew Point)
+                        t_dew = temp - ((100.0 - humi) / 5.0)
+                        dew_gap = temp - t_dew
+
+                        should_fan_on = False
+                        
+                        # C. Logic kiểm soát bảo vệ đọng sương (Anti-Condensation)
+                        if dew_gap < 2.0:
+                            # Nguy cơ đọng sương/mốc lá: Khóa phun sương cứng và bật quạt thổi tản ẩm
+                            if not self.is_overridden("mist") and latest_data.mist_on:
+                                self.serial_service.send_command("MIST_OFF")
+                                logger.warning(f"⚠️ [Anti-Condensation] Cảnh báo đọng sương! Gap={dew_gap:.1f}°C < 2°C. Tắt phun sương.")
+                            if not self.is_overridden("fan") and not latest_data.fan_on:
+                                self.serial_service.send_command("FAN_ON")
+                                logger.warning("⚠️ [Anti-Condensation] Bật quạt tản ẩm.")
+                            should_fan_on = True
+                        else:
+                            # D. Logic kiểm soát dựa trên chỉ số sinh học VPD
+                            if vpd > 1.2:
+                                # Không khí quá khô: Bật phun sương tuần hoàn (Pulse Misting: 5s on, 45s off)
+                                if not self.is_overridden("mist") and not latest_data.mist_on:
+                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (>1.2), bật phun sương tuần hoàn 5s-45s.")
+                                    self.serial_service.send_command("MIST_CYCLIC 5000 45000")
+                            elif vpd < 0.8:
+                                # Không khí quá ẩm: Tắt phun sương và bật quạt tản ẩm
+                                if not self.is_overridden("mist") and latest_data.mist_on:
+                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), tắt phun sương.")
+                                    self.serial_service.send_command("MIST_OFF")
+                                if not self.is_overridden("fan") and not latest_data.fan_on:
+                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), bật quạt tản ẩm.")
+                                    self.serial_service.send_command("FAN_ON")
+                                should_fan_on = True
+                            else:
+                                # Trong dải tối ưu: Tắt các thiết bị bù nếu không ở chế độ đặc biệt của stage
+                                if not self.is_overridden("mist") and latest_data.mist_on:
+                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa trong dải tối ưu (0.8 - 1.2), tắt phun sương.")
+                                    self.serial_service.send_command("MIST_OFF")
+                                if not self.is_overridden("fan") and latest_data.fan_on:
+                                    # Kiểm tra xem có đang ở stage 3 & bật đèn không
+                                    stage3_fan = (stage == 3 and should_led_on)
+                                    if not stage3_fan:
+                                        logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa trong dải tối ưu, tắt quạt.")
+                                        self.serial_service.send_command("FAN_OFF")
+
+                        # 6. Quạt thông gió theo chu kỳ sinh trưởng (Stage 3 - Sinh khối)
+                        # Nếu không bị ép bật ở trên bởi VPD hay Dew Point
+                        if not should_fan_on and not self.is_overridden("fan"):
+                            stage3_fan = (stage == 3 and should_led_on)
+                            if stage3_fan and not latest_data.fan_on:
+                                self.serial_service.send_command("FAN_ON")
+                            elif not stage3_fan and latest_data.fan_on:
+                                self.serial_service.send_command("FAN_OFF")
+
+                # Cập nhật nhịp tim cho Arduino (sử dụng lệnh HB) ở tầng PC
+                # (Nhịp tim PC được duy trì ở thread serial_service nên không cần gửi trực tiếp ở đây)
 
             except Exception as e:
                 logger.error(f"Lỗi vòng lặp tự động hóa: {e}")
 
             time.sleep(10)  # Chu kỳ 10 giây/lần
+

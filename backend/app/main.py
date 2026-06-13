@@ -70,6 +70,9 @@ async def lifespan(app: FastAPI):
         # Bổ sung giai đoạn tăng trưởng vào dữ liệu
         data.growth_stage = get_current_stage()
         
+        # Ghi nhận nhiệt độ vào bộ đệm RAM của AutomationService
+        automation_service.record_temp(data.temperature)
+        
         csv_service.save_record(data)
         # Schedule async broadcast trong event loop
         asyncio.run_coroutine_threadsafe(broadcast_sensor_data(data), loop)

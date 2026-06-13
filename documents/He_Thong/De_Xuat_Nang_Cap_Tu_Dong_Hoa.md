@@ -19,27 +19,31 @@ Mặc dù hệ thống tự động hóa hiện tại hoạt động ổn địn
 > Các nâng cấp dưới đây được thiết kế theo dạng module độc lập, có thể triển khai cuốn chiếu từng phần mà không gây gián đoạn hệ thống hiện tại.
 
 ### Hạng Mục 1: Tưới nước thông minh theo phản hồi độ ẩm đất (Soil Moisture-Gated Watering)
-Thay đổi cơ chế kích hoạt máy bơm nước gốc từ lịch trình thời gian thuần túy sang cơ chế lai (Hybrid Control):
+Thay đổi cơ chế kích hoạt máy bơm nước gốc từ lịch trình thời gian thuần túy sang cơ chế lai (Hybrid Control) và áp dụng phương pháp tưới xung ngắt quãng (Pulse Watering):
 *   **Tưới khi cần thiết (Demand-driven):** Kích hoạt tưới ngay lập tức nếu độ ẩm đất tụt xuống dưới ngưỡng tối thiểu cho phép (Ví dụ: $< 45\%$) và tự động tắt bơm khi độ ẩm đất chạm ngưỡng no nước (Ví dụ: $75\%$).
-*   **Bỏ qua chu kỳ thừa (Smart Gating):** Đến mốc giờ tưới theo lịch trình (ví dụ: 12:00), backend sẽ đọc cảm biến đất. Nếu độ ẩm đất đang $> 70\%$ (do trời âm u, bốc hơi nước chậm), hệ thống sẽ **bỏ qua (Skip)** lượt tưới đó hoặc giảm thời lượng tưới xuống $50\%$.
+*   **Bỏ qua chu kỳ thừa (Smart Gating):** Đến mốc giờ tưới theo lịch trình (ví dụ: 12:00), backend sẽ đọc cảm biến đất. Nếu độ ẩm đất đang $> 70\%$ (do trời âm u, bốc hơi nước chậm), hệ thống sẽ **bỏ qua (Skip)** lượt tưới đó; nếu độ ẩm đất nằm trong khoảng $60\% - 70\%$, giảm thời lượng tưới xuống còn $50\%$.
+*   **Tưới xung ngắt quãng (Pulse Watering):** Thay vì bơm liên tục, hệ thống sẽ chia thời lượng tưới thành nhiều xung ngắn (ví dụ: bơm 10 giây nghỉ 15 giây) để nước thấm đều, tránh chảy tràn và trôi chất dinh dưỡng.
 
 | Trạng thái ẩm đất | Điều kiện giờ tưới | Hành động của máy bơm |
 | :--- | :--- | :--- |
 | **Ẩm đất < 45%** (Khô hạn) | Bất kỳ lúc nào | Bơm cứu nạn ngay lập tức trong 15s (kèm 5m cooldown) |
-| **Ẩm đất 45% - 70%** | Đúng giờ hẹn của Giai đoạn | Bơm theo thời gian định mức (có nhân hệ số ML Optimizer) |
-| **Ẩm đất > 70%** | Đúng giờ hẹn của Giai đoạn | Bỏ qua lượt tưới (Skip) để phòng úng rễ |
+| **Ẩm đất 45% - 70%** | Đúng giờ hẹn của Giai đoạn | Tưới xung ngắt quãng theo thời gian định mức (có nhân hệ số Temp Optimizer) |
+| **Ẩm đất > 70%** | Đúng giờ hẹn của Giai đoạn | Bỏ qua lượt tưới (Skip) để phòng úng rễ và thối rễ |
+
 
 ---
 
 ### Hạng Mục 2: Điều hòa không khí theo chỉ số sinh học VPD (Vapor Pressure Deficit)
-Thay thế cơ chế điều khiển phun sương và quạt gió độc lập bằng thuật toán kiểm soát VPD thời gian thực.
+Thay thế cơ chế điều khiển phun sương và quạt gió độc lập bằng thuật toán kiểm soát VPD thời gian thực, kết hợp kiểm soát điểm đọng sương (Dew Point) và phun sương ngắt quãng (Pulse Misting):
 *   **Công thức tính chỉ số VPD ($kPa$):**
     $$VP_{sat} = 0.61078 \times e^{\left(\frac{17.27 \times Temp}{Temp + 237.3}\right)}$$
     $$VPD = VP_{sat} \times \left(1 - \frac{Humidity}{100}\right)$$
     *(Trong đó: $Temp$ là nhiệt độ $^\circ\text{C}$, $Humidity$ là độ ẩm tương đối $\%$).*
-*   **Mục tiêu điều khiển:** Điều chỉnh phun sương và quạt thông gió để đưa chỉ số VPD vào **dải tối ưu cho cải thìa ($0.8 - 1.2\text{ kPa}$)**.
-    *   Nếu $VPD > 1.2\text{ kPa}$ (Không khí quá khô, cây thoát hơi nước quá nhanh gây héo lá): Kích hoạt phun sương để giảm VPD.
-    *   Nếu $VPD < 0.8\text{ kPa}$ (Không khí quá ẩm, cây không thể thoát hơi nước để hút dinh dưỡng): Bật quạt thông gió để giảm độ ẩm khí và tăng VPD lên dải an toàn.
+*   **Mục tiêu điều khiển:** Điều chỉnh phun sương và quạt thông gió để đưa chỉ số VPD vào **dải tối ưu cho cải thìa ($0.8 - 1.2\text{ kPa}$)**:
+    *   Nếu $VPD > 1.2\text{ kPa}$ (Không khí quá khô, cây thoát hơi nước quá nhanh gây héo lá): Kích hoạt **phun sương ngắt quãng (Pulse Misting)** (ví dụ: phun 5 giây nghỉ 45 giây) để cấp ẩm đều đặn vào không khí mà không đọng giọt trên lá.
+    *   Nếu $VPD < 0.8\text{ kPa}$ (Không khí quá ẩm, cây không thể thoát hơi nước để hút dinh dưỡng): Tắt phun sương và bật quạt thông gió để giảm độ ẩm khí, đưa VPD trở lại dải an toàn.
+*   **Thuật toán Chống đọng sương (Anti-Condensation):** Tính toán điểm đọng sương $T_{dew} \approx Temp - (100 - Humidity)/5$. Nếu nhiệt độ thực tế tiệm cận điểm đọng sương (chênh lệch $< 2.0^\circ\text{C}$), hệ thống lập tức khóa phun sương và kích hoạt quạt thông gió tối đa để ngăn ngừa tạo màng nước trên lá gây nấm mốc.
+
 
 ---
 
@@ -76,7 +80,8 @@ graph TD
     C --> D["Giai đoạn 4: Liên kết đóng vòng với Camera AI"]
 ```
 
-*   **Tuần 1 (Giai đoạn 1):** Cập nhật logic `automation.py` để check độ ẩm đất thực tế từ sensor trước khi quyết định gửi lệnh `PUMP_ON`.
-*   **Tuần 2 (Giai đoạn 2):** Viết module tính toán VPD ở backend, cấu hình lại dải bật/tắt thiết bị dựa trên VPD thay cho RH.
+*   **Tuần 1 (Giai đoạn 1):** Cập nhật logic `automation.py` để check độ ẩm đất thực tế từ sensor trước khi quyết định gửi lệnh `PUMP_ON`. Triển khai cơ chế tưới xung ngắt quãng (Pulse Watering) và nâng cấp firmware Arduino để cho phép tùy chỉnh thời gian chạy/cooldown động.
+*   **Tuần 2 (Giai đoạn 2):** Viết module tính toán VPD và điểm đọng sương ở backend, cấu hình lại dải bật/tắt thiết bị dựa trên VPD & điểm đọng sương, áp dụng cơ chế phun sương tuần hoàn (Pulse Misting) để ngăn ngừa thối lá.
 *   **Tuần 3 (Giai đoạn 3):** Đăng ký API thời tiết miễn phí và viết tác vụ nền (background task) cập nhật dự báo thời tiết vào hệ thống.
 *   **Tuần 4 (Giai đoạn 4):** Xây dựng cầu nối API giữa AI Camera Service và Automation Service để hoàn thành chu trình tự động hóa khép kín hoàn toàn.
+

@@ -5,7 +5,7 @@
  *   1. Đọc cảm biến DHT22 (nhiệt độ + độ ẩm không khí)
  *   2. Đọc cảm biến Capacitive Soil Moisture (độ ẩm đất)
  *   3. Điều khiển 3 relay (bơm nước + phun sương + quạt) qua lệnh Serial
- *   4. Gửi dữ liệu JSON qua Serial mỗi 1 giây (High-Fidelity cho ML)
+ *   4. Gửi dữ liệu JSON qua Serial mỗi 1 giây (High-Fidelity cho phân tích dữ liệu)
  */
 
 #include "Config.h"
