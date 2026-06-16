@@ -20,6 +20,8 @@ void sendSensorData(float temperature, float humidity, int soilMoisturePercent, 
     Serial.print(pumpRelay.isOn() ? 1 : 0);
     Serial.print(",\"mist\":");
     Serial.print(mistRelay.isOn() ? 1 : 0);
+    Serial.print(",\"mist_cyclic\":");
+    Serial.print(mistRelay.isCyclic() ? 1 : 0);
     Serial.print(",\"fan\":");
     Serial.print(fanRelay.isOn() ? 1 : 0);
     Serial.print(",\"led\":");

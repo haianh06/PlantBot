@@ -82,6 +82,10 @@ void RelayController::clearCyclicMode() {
     _setHardwareState(false);
 }
 
+bool RelayController::isCyclic() const {
+    return _isCyclic;
+}
+
 void RelayController::forceLock() {
     _locked = true;
     _isCyclic = false;

@@ -276,6 +276,7 @@ class SerialService:
                     soil_raw=int(data.get("soil_raw", 0)),
                     pump_on=bool(data.get("pump", 0)),
                     mist_on=bool(data.get("mist", 0)),
+                    mist_cyclic=bool(data.get("mist_cyclic", 0)),
                     fan_on=bool(data.get("fan", 0)),
                     led_on=bool(data.get("led", 0)),
                     safe_mode=bool(data.get("safe_mode", False)),

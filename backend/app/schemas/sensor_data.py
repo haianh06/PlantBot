@@ -9,6 +9,7 @@ class SensorDataBase(BaseModel):
     soil_raw: int = Field(default=0, description="Giá trị đọc Analog thô của cảm biến đất (0-1023)")
     pump_on: bool = Field(default=False, description="Máy bơm đang bật")
     mist_on: bool = Field(default=False, description="Phun sương đang bật")
+    mist_cyclic: bool = Field(default=False, description="Phun sương đang ở chế độ tuần hoàn (cyclic)")
     fan_on: bool = Field(default=False, description="Quạt đang bật")
     led_on: bool = Field(default=False, description="Đèn đang bật")
     safe_mode: bool = Field(default=False, description="Chế độ an toàn")
