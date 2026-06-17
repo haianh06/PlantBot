@@ -55,41 +55,23 @@ async def lifespan(app: FastAPI):
     serial_service = SerialService()
     app.state.serial_service = serial_service
 
+    # 3. Automation Service
+    from backend.app.services.automation import AutomationService, get_current_stage
+    automation_service = AutomationService(serial_service=serial_service, csv_service=csv_service)
+    app.state.automation_service = automation_service
+    automation_service.start()
+    logger.info("✅ Automation Service sẵn sàng")
+
     # Callback: khi có data mới → lưu CSV + broadcast WebSocket
     loop = asyncio.get_event_loop()
-
-    from datetime import datetime
-
-    def get_current_stage():
-        try:
-            cfg = load_json_settings()
-            data_cfg = cfg.get("data", {})
-            
-            # Nếu không bật tracking, trả về stage 0 (không track)
-            if not data_cfg.get("is_tracking", True):
-                return 0
-                
-            planting_date_str = data_cfg.get("planting_date", "2026-06-10")
-            planting_date = datetime.strptime(planting_date_str, "%Y-%m-%d")
-            days_passed = (datetime.now() - planting_date).days + 1
-            
-            # Lấy cấu hình ngày của từng giai đoạn
-            growth_cfg = data_cfg.get("growth_config", {})
-            s1 = growth_cfg.get("stage1_days", 5)
-            s2 = growth_cfg.get("stage2_days", 12)
-            s3 = growth_cfg.get("stage3_days", 25)
-            
-            if days_passed <= s1: return 1
-            if days_passed <= s2: return 2
-            if days_passed <= s3: return 3
-            return 4
-        except:
-            return 1
 
     def on_sensor_data(data):
         """Callback từ serial reader thread → lưu CSV + broadcast WS."""
         # Bổ sung giai đoạn tăng trưởng vào dữ liệu
         data.growth_stage = get_current_stage()
+        
+        # Ghi nhận nhiệt độ vào bộ đệm RAM của AutomationService
+        automation_service.record_temp(data.temperature)
         
         csv_service.save_record(data)
         # Schedule async broadcast trong event loop
@@ -125,6 +107,10 @@ async def lifespan(app: FastAPI):
 
     # --- Shutdown ---
     logger.info("🌿 PlantBot Backend đang tắt...")
+    try:
+        app.state.automation_service.stop()
+    except Exception as e:
+        logger.error(f"Lỗi khi dừng Automation Service: {e}")
     serial_service.disconnect()
     camera_service.stop_all()
     logger.info("🌿 Đã cleanup tất cả resources. Bye!")

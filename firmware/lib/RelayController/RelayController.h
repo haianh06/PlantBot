@@ -33,6 +33,7 @@ public:
     // Chế độ tuần hoàn (Dành cho quạt / phun sương)
     void setCyclicMode(unsigned long onTime, unsigned long offTime);
     void clearCyclicMode();
+    bool isCyclic() const;
 
     // Khóa khẩn cấp (Sanity Check fail)
     void forceLock();

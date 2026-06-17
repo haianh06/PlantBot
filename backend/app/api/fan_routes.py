@@ -60,6 +60,12 @@ async def control_fan(command: FanCommand, request: Request):
     # Gửi lệnh xuống Arduino
     success = serial_service.send_command(serial_cmd)
 
+    if success:
+        try:
+            request.app.state.automation_service.register_override(command.device)
+        except Exception as e:
+            logger.error(f"Lỗi đăng ký override cho {command.device}: {e}")
+
     device_name = "Quạt"
     action_name = "bật" if command.action == "on" else "tắt"
 

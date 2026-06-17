@@ -95,19 +95,68 @@ def update_calibration(dry_value: int, wet_value: int) -> dict:
     save_json_settings(settings)
     return settings["sensor_calibration"]
 
+def get_auto_mode() -> bool:
+    """Lấy trạng thái Auto Mode từ settings.json."""
+    settings = load_json_settings()
+    return settings.get("auto_mode", True)
+
+
+def update_auto_mode(enabled: bool) -> bool:
+    """Cập nhật trạng thái Auto Mode vào settings.json."""
+    settings = load_json_settings()
+    settings["auto_mode"] = enabled
+    save_json_settings(settings)
+    return enabled
+
+
+def get_growth_preset() -> str:
+    """Lấy tên Preset gieo trồng hiện tại (mature / baby / custom)."""
+    settings = load_json_settings()
+    return settings.get("growth_preset", "mature")
+
+
+def update_growth_preset(preset: str) -> str:
+    """Cập nhật Preset gieo trồng và tự động thay đổi cấu hình ngày tương ứng nếu chọn mature/baby."""
+    settings = load_json_settings()
+    settings["growth_preset"] = preset
+    
+    if "data" not in settings:
+        settings["data"] = {}
+        
+    # Tự động đồng bộ số ngày của preset
+    if preset == "baby":
+        settings["data"]["growth_config"] = {
+            "stage1_days": 4,
+            "stage2_days": 12,  # 4 + 8 days passed -> s2 = 12
+            "stage3_days": 22,  # 12 + 10 days passed -> s3 = 22
+        }
+    elif preset == "mature":
+        settings["data"]["growth_config"] = {
+            "stage1_days": 5,
+            "stage2_days": 17,  # 5 + 12 days passed -> s2 = 17
+            "stage3_days": 32,  # 17 + 15 days passed -> s3 = 32
+        }
+        
+    save_json_settings(settings)
+    return preset
+
+
 def get_growth_settings() -> dict:
     """Lấy thông tin cấu hình tăng trưởng từ settings.json."""
     settings = load_json_settings()
-    return settings.get("data", {
+    res = settings.get("data", {
         "planting_date": "2026-06-10",
         "is_tracking": True,
         "current_crop": "Bok Choy",
         "growth_config": {
             "stage1_days": 5,
-            "stage2_days": 12,
-            "stage3_days": 25
+            "stage2_days": 17,
+            "stage3_days": 32
         }
     })
+    res["growth_preset"] = settings.get("growth_preset", "mature")
+    return res
+
 
 def update_growth_settings(data: dict) -> dict:
     """Cập nhật thông tin cấu hình tăng trưởng vào settings.json."""
@@ -115,6 +164,10 @@ def update_growth_settings(data: dict) -> dict:
     if "data" not in settings:
         settings["data"] = {}
     
+    # Nếu đang update growth_config bằng tay từ UI, set preset thành custom
+    if "growth_config" in data:
+        settings["growth_preset"] = "custom"
+        
     settings["data"].update(data)
     save_json_settings(settings)
     return settings["data"]

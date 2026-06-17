@@ -6,6 +6,7 @@ export function SafeModeBanner({ safeMode, errorCode }) {
   let errorMessage = 'Lỗi không xác định';
   if (errorCode === 1) errorMessage = 'Phát hiện lỗi Cảm biến DHT22 (Nhiệt độ/Độ ẩm). Đã ngắt phun sương và quạt chạy nền.';
   if (errorCode === 2) errorMessage = 'Phát hiện lỗi Cảm biến Độ ẩm đất. Đã khóa hệ thống máy bơm nước.';
+  if (errorCode === 3) errorMessage = 'Phát hiện độ ẩm đất quá cao (>85%). Đã ngắt và khóa hệ thống máy bơm để phòng chống ngập úng.';
 
   return (
     <div className="safe-mode-banner">

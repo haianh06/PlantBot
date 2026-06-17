@@ -13,6 +13,7 @@ CSV Format:
 import csv
 import threading
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -22,7 +23,7 @@ from backend.app.config import PROJECT_ROOT
 logger = logging.getLogger(__name__)
 
 # Header columns cho file CSV
-CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on", "growth_stage"]
+CSV_HEADERS = ["timestamp", "temperature", "humidity", "soil_moisture", "pump_on", "mist_on", "fan_on", "led_on", "growth_stage", "safe_mode", "error_code", "env_code", "offline"]
 
 
 class CSVService:
@@ -41,15 +42,29 @@ class CSVService:
         self._ensure_file_exists()
 
     def _ensure_file_exists(self) -> None:
-        """Tạo file CSV với header nếu chưa tồn tại."""
+        """Tạo file CSV với header nếu chưa tồn tại hoặc backup nếu cấu hình cũ."""
         # Tạo thư mục cha nếu cần
         self._file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if self._file_path.exists():
+            # Kiểm tra xem header có khớp số lượng cột không
+            try:
+                with open(self._file_path, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    existing_headers = next(reader, [])
+                if len(existing_headers) != len(CSV_HEADERS):
+                    logger.info("Cấu trúc file CSV cũ không khớp, đang tiến hành backup...")
+                    backup_path = self._file_path.with_name(f"sensor_data_backup_{int(time.time())}.csv")
+                    self._file_path.rename(backup_path)
+                    logger.info(f"Đã backup file CSV cũ sang: {backup_path}")
+            except Exception as e:
+                logger.error(f"Lỗi kiểm tra/backup file CSV: {e}")
 
         if not self._file_path.exists():
             with open(self._file_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(CSV_HEADERS)
-            logger.info(f"Đã tạo file CSV: {self._file_path}")
+            logger.info(f"Đã tạo file CSV mới: {self._file_path}")
 
     def save_record(self, data: SensorData) -> None:
         """
@@ -72,9 +87,39 @@ class CSVService:
                         data.fan_on,
                         data.led_on,
                         data.growth_stage,
+                        data.safe_mode,
+                        data.error_code,
+                        data.env_code,
+                        data.offline,
                     ])
             except IOError as e:
                 logger.error(f"Lỗi ghi CSV: {e}")
+
+    def backup_and_reset(self) -> str:
+        """
+        Backup file CSV hiện tại bằng cách đổi tên thành sensor_data_backup_<timestamp>.csv
+        và tạo một file CSV rỗng mới.
+        """
+        import time
+        with self._lock:
+            try:
+                if self._file_path.exists():
+                    timestamp = int(time.time())
+                    backup_name = f"sensor_data_backup_{timestamp}.csv"
+                    backup_path = self._file_path.with_name(backup_name)
+                    self._file_path.rename(backup_path)
+                    logger.info(f"Đã backup file CSV cũ sang: {backup_path}")
+                    
+                    # Tạo file mới với header
+                    with open(self._file_path, "w", newline="", encoding="utf-8") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(CSV_HEADERS)
+                    logger.info(f"Đã tạo file CSV mới sau khi backup: {self._file_path}")
+                    return backup_name
+            except Exception as e:
+                logger.error(f"Lỗi backup_and_reset CSV: {e}")
+                raise e
+            return ""
 
     def get_history(self, limit: int = 100) -> list[dict]:
         """
