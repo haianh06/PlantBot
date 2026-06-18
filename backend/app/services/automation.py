@@ -221,11 +221,10 @@ class AutomationService:
                 current_date = now.strftime("%Y-%m-%d")
 
                 # 3. Chu kỳ đèn LED quang hợp (14h/ngày: 06:00 - 20:00)
-                # Stage 1: Tắt hoàn toàn (trong bóng tối)
-                # Stage 2 & 3: Bật 06:00 - 20:00
+                # Stage 1, 2 & 3: Bật 06:00 - 20:00
                 # Stage 4: Tắt hoàn toàn (trước thu hoạch)
                 should_led_on = False
-                if stage in [2, 3]:
+                if stage in [1, 2, 3]:
                     should_led_on = (6 <= current_hour < 20)
 
                 if not self.is_overridden("led"):
@@ -235,14 +234,19 @@ class AutomationService:
                         self.serial_service.send_command("LED_OFF")
 
                 # 4. Lịch tưới nước tự động (Bơm gốc)
-                # Stage 1: Không tưới gốc (Force OFF)
+                # Stage 1: Tưới lúc 06h và 20h
                 # Stage 2: Mỗi 3 tiếng (09h, 12h, 15h, 18h) - Bơm 35s * temp_factor
                 # Stage 3: Mỗi 2 tiếng (08h, 10h, 12h, 14h, 16h, 18h) - Bơm 45s * temp_factor
                 # Stage 4: Không tưới gốc (Force OFF)
                 should_pump_on = False
                 pump_duration = 0
                 
-                if stage == 2 and should_led_on:
+                if stage == 1:
+                    target_hours = [6, 20]
+                    if current_hour in target_hours:
+                        should_pump_on = True
+                        pump_duration = int(25 * temp_factor)
+                elif stage == 2 and should_led_on:
                     target_hours = [9, 12, 15, 18]
                     if current_hour in target_hours:
                         should_pump_on = True
