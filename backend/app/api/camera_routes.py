@@ -104,6 +104,29 @@ async def update_ai_config(config: AIConfig, request: Request):
     camera_service.update_ai_config(config.interval_n, config.duration_m)
     return MessageResponse(message="Đã cập nhật cấu hình lập lịch AI")
 
+class TimelapseConfig(BaseModel):
+    enabled: bool
+    interval_m: int
+
+from backend.app.config import get_timelapse_settings, update_timelapse_settings
+
+@router.get("/timelapse_config")
+async def get_timelapse_config_route():
+    """Lấy cấu hình Timelapse."""
+    return get_timelapse_settings()
+
+@router.post("/timelapse_config", response_model=MessageResponse)
+async def update_timelapse_config_route(config: TimelapseConfig, request: Request):
+    """Cập nhật cấu hình Timelapse và đồng bộ với CameraService."""
+    updated = update_timelapse_settings(config.enabled, config.interval_m)
+    
+    camera_service = request.app.state.camera_service
+    if camera_service:
+        camera_service.update_timelapse_config(config.enabled, config.interval_m)
+        
+    return MessageResponse(message="Đã cập nhật cấu hình Timelapse")
+
+
 @router.get("/status")
 async def camera_status(request: Request):
     """Trạng thái tất cả camera (đang bật/tắt)."""

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { startNewBatch, fetchGrowthConfig, updateGrowthConfig } from '../../api/client';
+import { startNewBatch, fetchGrowthConfig, updateGrowthConfig, fetchTimelapseConfig, updateTimelapseConfig } from '../../api/client';
 import { CalibrationPanel } from './CalibrationPanel';
 import './NewBatchPanel.css';
 
@@ -19,6 +19,11 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
   // Trạng thái gieo trồng
   const [isTracking, setIsTracking] = useState(true);
   const [fullGrowthConfig, setFullGrowthConfig] = useState(null);
+
+  // Timelapse Camera 2 state
+  const [timelapseEnabled, setTimelapseEnabled] = useState(false);
+  const [timelapseInterval, setTimelapseInterval] = useState(5);
+  const [isSavingTimelapse, setIsSavingTimelapse] = useState(false);
 
   // Update preset state if prop changes
   useEffect(() => {
@@ -44,6 +49,14 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
         }
       })
       .catch((err) => console.error("Lỗi lấy cấu hình gieo trồng:", err));
+
+    // Lấy cấu hình Timelapse
+    fetchTimelapseConfig()
+      .then((data) => {
+        setTimelapseEnabled(data.enabled);
+        setTimelapseInterval(data.interval_m);
+      })
+      .catch((err) => console.error("Lỗi lấy cấu hình Timelapse:", err));
   }, []);
 
   const handleToggleTracking = async () => {
@@ -157,6 +170,22 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
       setIsSubmitting(false);
     }
   };
+
+  const handleSaveTimelapse = async () => {
+    setIsSavingTimelapse(true);
+    setStatusMsg({ text: '', type: '' });
+    try {
+      await updateTimelapseConfig(timelapseEnabled, timelapseInterval);
+      setStatusMsg({ text: '📸 Đã lưu cấu hình Timelapse thành công!', type: 'success' });
+      setTimeout(() => setStatusMsg({ text: '', type: '' }), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ text: '❌ Lỗi hệ thống: Không thể lưu cấu hình Timelapse.', type: 'error' });
+    } finally {
+      setIsSavingTimelapse(false);
+    }
+  };
+
 
   return (
     <div className="new-batch-container animate-fade-in">
@@ -296,7 +325,52 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
         </div>
       </div>
 
-      {/* 2. Form Calibration Cảm biến đất */}
+      {/* 2. Cấu hình Timelapse Camera 2 */}
+      <div className="timelapse-card card" style={{ marginTop: '24px' }}>
+        <div className="card__header">
+          <h2 className="card__title">📸 Cấu hình Timelapse Camera 2</h2>
+        </div>
+        <div className="card__body">
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            Hệ thống sẽ tự động chụp ảnh từ Camera 2 (Webcam) và lưu vào thư mục <code style={{ color: 'var(--accent-orange)' }}>data/Timelapse</code> sau mỗi chu kỳ cấu hình. Tính năng này giúp bạn theo dõi tốc độ lớn của cây sau này.
+          </p>
+          <div className="form-grid">
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Bật/tắt Timelapse:</label>
+              <label className="switch">
+                <input 
+                  type="checkbox" 
+                  checked={timelapseEnabled} 
+                  onChange={(e) => setTimelapseEnabled(e.target.checked)} 
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Khoảng thời gian chụp (Phút)</label>
+              <input 
+                type="number" 
+                className="form-input" 
+                value={timelapseInterval} 
+                onChange={(e) => setTimelapseInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                min={1}
+                disabled={!timelapseEnabled}
+              />
+            </div>
+          </div>
+          <div className="form-actions" style={{ marginTop: '16px' }}>
+            <button 
+              className="btn btn--primary" 
+              onClick={handleSaveTimelapse}
+              disabled={isSavingTimelapse}
+            >
+              {isSavingTimelapse ? 'Đang lưu...' : 'Lưu cấu hình Timelapse'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Form Calibration Cảm biến đất */}
       <div className="calibration-card-wrapper card" style={{ marginTop: '24px' }}>
         <div className="card__header">
           <h2 className="card__title">⚙️ Calibration Cảm Biến Độ Ẩm Đất</h2>

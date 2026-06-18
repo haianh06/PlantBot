@@ -171,3 +171,27 @@ def update_growth_settings(data: dict) -> dict:
     settings["data"].update(data)
     save_json_settings(settings)
     return settings["data"]
+
+
+def get_timelapse_settings() -> dict:
+    """Lấy cấu hình Timelapse từ settings.json."""
+    settings = load_json_settings()
+    return settings.get("camera", {}).get("timelapse", {
+        "enabled": False,
+        "interval_m": 5
+    })
+
+
+def update_timelapse_settings(enabled: bool, interval_m: int) -> dict:
+    """Cập nhật cấu hình Timelapse vào settings.json."""
+    settings = load_json_settings()
+    if "camera" not in settings:
+        settings["camera"] = {}
+    
+    timelapse_config = {
+        "enabled": enabled,
+        "interval_m": interval_m
+    }
+    settings["camera"]["timelapse"] = timelapse_config
+    save_json_settings(settings)
+    return timelapse_config

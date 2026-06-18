@@ -139,6 +139,17 @@ export const getCameraStreamUrl = (index = 0) =>
 
 // ─── AI & Gallery APIs ────────────────────────────────────────
 
+/** Lấy cấu hình Timelapse */
+export const fetchTimelapseConfig = () => request('/camera/timelapse_config');
+
+/** Cập nhật cấu hình Timelapse */
+export const updateTimelapseConfig = (enabled, interval_m) =>
+  request('/camera/timelapse_config', {
+    method: 'POST',
+    body: JSON.stringify({ enabled, interval_m }),
+  });
+
+
 /** Lấy cấu hình lập lịch AI */
 export const fetchAiConfig = () => request('/camera/ai_config');
 

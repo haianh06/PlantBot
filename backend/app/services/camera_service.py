@@ -12,8 +12,11 @@ import numpy as np
 import threading
 import logging
 import time
+import os
+from datetime import datetime
 
 from typing import Optional, Generator
+from backend.app.config import get_timelapse_settings
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,18 @@ class CameraService:
         self._ai_scheduler_running = True
         self._ai_thread = threading.Thread(target=self._ai_scheduler_loop, daemon=True)
         self._ai_thread.start()
+
+        # Cấu hình Timelapse Camera 2 (Index 1)
+        timelapse_cfg = get_timelapse_settings()
+        self._timelapse_enabled = timelapse_cfg.get("enabled", False)
+        self._timelapse_interval_m = timelapse_cfg.get("interval_m", 5)
+        self._timelapse_save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "Timelapse")
+        os.makedirs(self._timelapse_save_dir, exist_ok=True)
+        
+        # Thread chạy ngầm Timelapse
+        self._timelapse_running = True
+        self._timelapse_thread = threading.Thread(target=self._timelapse_scheduler_loop, daemon=True)
+        self._timelapse_thread.start()
 
     def _ai_scheduler_loop(self):
         """Luồng ngầm chạy liên tục để chuyển đổi trạng thái Quét/Nghỉ."""
@@ -105,6 +120,50 @@ class CameraService:
         self.ai_scan_interval_n = interval_n
         self.ai_scan_duration_m = duration_m
         logger.info(f"Đã cập nhật cấu hình AI: Nghỉ {interval_n}s, Quét {duration_m}s")
+
+    def _timelapse_scheduler_loop(self):
+        """Luồng ngầm chạy để chụp ảnh Timelapse cho Camera 2."""
+        last_capture_time = time.time()
+        
+        while self._timelapse_running:
+            time.sleep(1)
+            
+            if not self._timelapse_enabled:
+                last_capture_time = time.time() # Reset bộ đếm khi đang tắt
+                continue
+                
+            current_time = time.time()
+            if current_time - last_capture_time >= self._timelapse_interval_m * 60:
+                last_capture_time = current_time
+                
+                # Chụp ảnh từ Camera index 1
+                if self.is_active(1):
+                    # Chỉ dùng get_frame mà không cần thay đổi trạng thái AI.
+                    # Lấy frame thô, không phải dạng JPEG bytes (get_frame trả về jpeg).
+                    lock = self._locks.get(1)
+                    if lock:
+                        with lock:
+                            try:
+                                ret, frame = self._captures[1].read()
+                                if ret:
+                                    now = datetime.now()
+                                    timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
+                                    # Vẽ timestamp lên ảnh
+                                    cv2.putText(frame, timestamp_str, (10, frame.shape[0] - 10), 
+                                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
+                                    
+                                    filename = f"timelapse_{now.strftime('%Y%m%d_%H%M%S')}.jpg"
+                                    filepath = os.path.join(self._timelapse_save_dir, filename)
+                                    cv2.imwrite(filepath, frame)
+                                    logger.info(f"Đã lưu ảnh Timelapse Camera 2: {filename}")
+                            except Exception as e:
+                                logger.error(f"Lỗi capture timelapse: {e}")
+
+    def update_timelapse_config(self, enabled: bool, interval_m: int):
+        self._timelapse_enabled = enabled
+        self._timelapse_interval_m = interval_m
+        logger.info(f"Đã cập nhật cấu hình Timelapse: Bật={enabled}, Chu kỳ={interval_m}m")
+
 
     def start(self, index: int = 0) -> bool:
         """
