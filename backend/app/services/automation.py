@@ -330,13 +330,20 @@ class AutomationService:
 
                         should_fan_on = False
                         
+                        # High Temp Control
+                        if temp > 30.0:
+                            if not self.is_overridden("fan") and not latest_data.fan_on:
+                                self.serial_service.send_command("FAN_ON")
+                                logger.warning(f"⚠️ [High Temp] Nhiệt độ cao ({temp:.1f}°C > 30°C). Bật quạt liên tục.")
+                            should_fan_on = True
+
                         # C. Logic kiểm soát bảo vệ đọng sương (Anti-Condensation)
                         if dew_gap < 2.0:
                             # Nguy cơ đọng sương/mốc lá: Khóa phun sương cứng và bật quạt thổi tản ẩm
                             if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
                                 self.serial_service.send_command("MIST_OFF")
                                 logger.warning(f"⚠️ [Anti-Condensation] Cảnh báo đọng sương! Gap={dew_gap:.1f}°C < 2°C. Tắt phun sương.")
-                            if not self.is_overridden("fan") and not latest_data.fan_on:
+                            if not should_fan_on and not self.is_overridden("fan") and not latest_data.fan_on:
                                 self.serial_service.send_command("FAN_ON")
                                 logger.warning("⚠️ [Anti-Condensation] Bật quạt tản ẩm.")
                             should_fan_on = True
@@ -352,7 +359,7 @@ class AutomationService:
                                 if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
                                     logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), tắt phun sương.")
                                     self.serial_service.send_command("MIST_OFF")
-                                if not self.is_overridden("fan") and not latest_data.fan_on:
+                                if not should_fan_on and not self.is_overridden("fan") and not latest_data.fan_on:
                                     logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), bật quạt tản ẩm.")
                                     self.serial_service.send_command("FAN_ON")
                                 should_fan_on = True
@@ -361,7 +368,7 @@ class AutomationService:
                                 if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
                                     logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa trong dải tối ưu (0.8 - 1.2), tắt phun sương.")
                                     self.serial_service.send_command("MIST_OFF")
-                                if not self.is_overridden("fan") and latest_data.fan_on:
+                                if not should_fan_on and not self.is_overridden("fan") and latest_data.fan_on:
                                     # Kiểm tra xem có đang ở stage 3 & bật đèn không
                                     stage3_fan = (stage == 3 and should_led_on)
                                     if not stage3_fan:
