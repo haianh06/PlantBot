@@ -441,7 +441,3 @@ Các lệnh text đơn giản (kết thúc bằng ký tự xuống dòng `\n`):
 - **Giải pháp**: Kiểm tra lại trạng thái kết nối Live ở góc trên bên trái màn hình. Khi WebSocket chuyển sang màu xanh lá (`Live`), tính năng Bật / Tắt sẽ hoạt động trơn tru.
 
 ---
-
-## 📜 Giấy phép
-
-Hệ thống được phát triển dưới dạng mã nguồn mở theo giấy phép MIT.
