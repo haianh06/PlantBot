@@ -334,7 +334,7 @@ class AutomationService:
                         if temp > 30.0:
                             if not self.is_overridden("fan") and not latest_data.fan_on:
                                 self.serial_service.send_command("FAN_ON")
-                                logger.warning(f"⚠️ [High Temp] Nhiệt độ cao ({temp:.1f}°C > 30°C). Bật quạt liên tục.")
+                                logger.warning(f"[High Temp] Nhiệt độ cao ({temp:.1f}°C > 30°C). Bật quạt liên tục.")
                             should_fan_on = True
 
                         # C. Logic kiểm soát bảo vệ đọng sương (Anti-Condensation)
@@ -342,31 +342,31 @@ class AutomationService:
                             # Nguy cơ đọng sương/mốc lá: Khóa phun sương cứng và bật quạt thổi tản ẩm
                             if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
                                 self.serial_service.send_command("MIST_OFF")
-                                logger.warning(f"⚠️ [Anti-Condensation] Cảnh báo đọng sương! Gap={dew_gap:.1f}°C < 2°C. Tắt phun sương.")
+                                logger.warning(f"[Anti-Condensation] Cảnh báo đọng sương! Gap={dew_gap:.1f}°C < 2°C. Tắt phun sương.")
                             if not should_fan_on and not self.is_overridden("fan") and not latest_data.fan_on:
                                 self.serial_service.send_command("FAN_ON")
-                                logger.warning("⚠️ [Anti-Condensation] Bật quạt tản ẩm.")
+                                logger.warning("[Anti-Condensation] Bật quạt tản ẩm.")
                             should_fan_on = True
                         else:
                             # D. Logic kiểm soát dựa trên chỉ số sinh học VPD
                             if vpd > 1.2:
                                 # Không khí quá khô: Bật phun sương tuần hoàn (Pulse Misting: 5s on, 45s off)
                                 if not self.is_overridden("mist") and not latest_data.mist_on and not latest_data.mist_cyclic:
-                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (>1.2), bật phun sương tuần hoàn 5s-45s.")
+                                    logger.info(f"[VPD Control] VPD={vpd:.2f} kPa (>1.2), bật phun sương tuần hoàn 5s-45s.")
                                     self.serial_service.send_command("MIST_CYCLIC 5000 45000")
                             elif vpd < 0.8:
                                 # Không khí quá ẩm: Tắt phun sương và bật quạt tản ẩm
                                 if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
-                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), tắt phun sương.")
+                                    logger.info(f"[VPD Control] VPD={vpd:.2f} kPa (<0.8), tắt phun sương.")
                                     self.serial_service.send_command("MIST_OFF")
                                 if not should_fan_on and not self.is_overridden("fan") and not latest_data.fan_on:
-                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa (<0.8), bật quạt tản ẩm.")
+                                    logger.info(f"[VPD Control] VPD={vpd:.2f} kPa (<0.8), bật quạt tản ẩm.")
                                     self.serial_service.send_command("FAN_ON")
                                 should_fan_on = True
                             else:
                                 # Trong dải tối ưu: Tắt các thiết bị bù nếu không ở chế độ đặc biệt của stage
                                 if not self.is_overridden("mist") and (latest_data.mist_on or latest_data.mist_cyclic):
-                                    logger.info(f"🤖 [VPD Control] VPD={vpd:.2f} kPa trong dải tối ưu (0.8 - 1.2), tắt phun sương.")
+                                    logger.info(f"[VPD Control] VPD={vpd:.2f} kPa trong dải tối ưu (0.8 - 1.2), tắt phun sương.")
                                     self.serial_service.send_command("MIST_OFF")
                                 if not should_fan_on and not self.is_overridden("fan") and latest_data.fan_on:
                                     # Kiểm tra xem có đang ở stage 3 & bật đèn không

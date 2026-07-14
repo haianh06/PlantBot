@@ -42,14 +42,14 @@ async def lifespan(app: FastAPI):
     Shutdown: cleanup tất cả resources
     """
     settings = get_settings()
-    logger.info("🌿 PlantBot Backend đang khởi động...")
+    logger.info("PlantBot Backend starting...")
 
     # --- Startup ---
 
     # 1. CSV Service
     csv_service = CSVService(file_path=settings.CSV_FILE_PATH)
     app.state.csv_service = csv_service
-    logger.info("✅ CSV Service sẵn sàng")
+    logger.info("CSV Service ready")
 
     # 2. Serial Service
     serial_service = SerialService()
@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
     automation_service = AutomationService(serial_service=serial_service, csv_service=csv_service)
     app.state.automation_service = automation_service
     automation_service.start()
-    logger.info("✅ Automation Service sẵn sàng")
+    logger.info("Automation Service ready")
 
     # Callback: khi có data mới → lưu CSV + broadcast WebSocket
     loop = asyncio.get_event_loop()
@@ -82,38 +82,38 @@ async def lifespan(app: FastAPI):
     # Tự động kết nối Arduino
     connected = serial_service.connect(port=settings.SERIAL_PORT)
     if connected:
-        logger.info(f"✅ Arduino kết nối tại {serial_service.port}")
+        logger.info(f"Arduino connected at {serial_service.port}")
     else:
-        logger.warning("⚠️  Chưa kết nối Arduino — chạy ở chế độ offline")
+        logger.warning("Arduino not connected — running in offline mode")
 
     # 3. Camera Service
     from backend.app.services.ai_service import AIService
     import os
     
     # Path to AI model
-    model_path = r"c:\Documents\Project\PlantBot\ai_module\plantbot_best.pt"
+    model_path = "../ai_module/plantbot_best_v1.pt"
     ai_service = AIService(model_path=model_path)
     app.state.ai_service = ai_service
 
     camera_service = CameraService(ai_service=ai_service, serial_service=serial_service)
     app.state.camera_service = camera_service
-    logger.info("✅ Camera Service sẵn sàng")
+    logger.info("Camera Service ready")
 
-    logger.info("🌿 PlantBot Backend đã sẵn sàng!")
-    logger.info(f"   📡 Serial: {'Online' if connected else 'Offline'}")
-    logger.info(f"   📁 CSV: {settings.CSV_FILE_PATH}")
+    logger.info("PlantBot Backend is ready!")
+    logger.info(f"   Serial: {'Online' if connected else 'Offline'}")
+    logger.info(f"   CSV: {settings.CSV_FILE_PATH}")
 
     yield
 
     # --- Shutdown ---
-    logger.info("🌿 PlantBot Backend đang tắt...")
+    logger.info("PlantBot Backend shutting down...")
     try:
         app.state.automation_service.stop()
     except Exception as e:
-        logger.error(f"Lỗi khi dừng Automation Service: {e}")
+        logger.error(f"Error stopping Automation Service: {e}")
     serial_service.disconnect()
     camera_service.stop_all()
-    logger.info("🌿 Đã cleanup tất cả resources. Bye!")
+    logger.info("All resources cleaned up. Exit.")
 
 
 # ─── FastAPI App ─────────────────────────────────────────────
