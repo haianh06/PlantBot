@@ -132,7 +132,7 @@ export function CameraView({ cameras, aiConfig, toggleCamera, toggleAi, updateAi
                         left: '0', 
                         zIndex: 10, 
                         padding: '12px',
-                        background: 'var(--surface-color)',
+                        background: '#000000',
                         border: '1px solid var(--border-color)',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                         minWidth: '200px'

@@ -180,7 +180,7 @@
 }
 
 .camera-modal__close {
-  background: transparent;
+  background: black;
   border: none;
   color: var(--text-secondary);
   font-size: 1.75rem;

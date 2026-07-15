@@ -26,5 +26,11 @@
             "stage2_days": 12,
             "stage3_days": 25
         }
+    },
+    "notifications": {
+        "telegram_enabled": true,
+        "bot_token": "8939807188:AAGZ39KA5NsAI9-eh2a3LYeoBCr36uBPW4Q",
+        "chat_id": "8402899221",
+        "cooldown_minutes": 5
     }
 }

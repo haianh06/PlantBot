@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { startNewBatch, fetchGrowthConfig, updateGrowthConfig, fetchTimelapseConfig, updateTimelapseConfig } from '../../api/client';
 import { CalibrationPanel } from './CalibrationPanel';
+import { NotificationSettings } from './NotificationSettings';
 import './NewBatchPanel.css';
 
 export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
@@ -382,6 +383,9 @@ export function NewBatchPanel({ currentPreset, onPresetChange, sensorData }) {
           <CalibrationPanel sensorData={sensorData} />
         </div>
       </div>
+
+      {/* 4. Cấu hình Thông báo Telegram */}
+      <NotificationSettings />
 
       {/* Modal xác nhận bắt đầu lứa mới */}
       {showConfirm && (

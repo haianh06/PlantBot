@@ -195,3 +195,24 @@ def update_timelapse_settings(enabled: bool, interval_m: int) -> dict:
     settings["camera"]["timelapse"] = timelapse_config
     save_json_settings(settings)
     return timelapse_config
+
+def get_notification_settings() -> dict:
+    """Lấy cấu hình thông báo (Telegram + Web) từ settings.json."""
+    settings = load_json_settings()
+    return settings.get("notifications", {
+        "telegram_enabled": False,
+        "bot_token": "",
+        "chat_id": "",
+        "cooldown_minutes": 5
+    })
+
+
+def update_notification_settings(data: dict) -> dict:
+    """Cập nhật cấu hình thông báo vào settings.json."""
+    settings = load_json_settings()
+    if "notifications" not in settings:
+        settings["notifications"] = {}
+    
+    settings["notifications"].update(data)
+    save_json_settings(settings)
+    return settings["notifications"]

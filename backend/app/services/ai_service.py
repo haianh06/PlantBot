@@ -22,8 +22,13 @@ class AIService:
             
         self._last_saved_time = 0
         self._cooldown_seconds = 5 # Lưu tối đa 1 ảnh mỗi 5 giây
+        
+        self.notification_service = None # Được set từ main.py
+        self._last_notification_time = 0
+        
         self._save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "diseased_images")
         os.makedirs(self._save_dir, exist_ok=True)
+
 
     def detect_and_draw(self, frame: np.ndarray) -> np.ndarray:
         """
@@ -59,7 +64,19 @@ class AIService:
                     filepath = os.path.join(self._save_dir, filename)
                     cv2.imwrite(filepath, frame)
                     logger.info(f"Đã lưu ảnh phát hiện bệnh: {filename}")
+                    
+                    # Kiểm tra và gửi thông báo
+                    if self.notification_service:
+                        from backend.app.config import get_notification_settings
+                        settings = get_notification_settings()
+                        notification_cooldown = settings.get("cooldown_minutes", 5) * 60
+                        
+                        if current_time - self._last_notification_time >= notification_cooldown:
+                            self._last_notification_time = current_time
+                            alert_msg = f"Cảnh báo: Phát hiện dấu hiệu bệnh trên cây lúc {timestamp_str}"
+                            self.notification_service.trigger_notification(filename, filepath, alert_msg)
                 
+
             return frame
         except Exception as e:
             logger.error(f"Lỗi khi dự đoán ảnh: {e}")

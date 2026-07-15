@@ -98,6 +98,14 @@ async def lifespan(app: FastAPI):
     camera_service = CameraService(ai_service=ai_service, serial_service=serial_service)
     app.state.camera_service = camera_service
     logger.info("Camera Service ready")
+    
+    # 4. Notification Service
+    from backend.app.services.notification_service import NotificationService
+    notification_service = NotificationService(loop=loop)
+    app.state.notification_service = notification_service
+    # Truyền notification_service vào ai_service để gọi khi có bệnh
+    ai_service.notification_service = notification_service
+    logger.info("Notification Service ready")
 
     logger.info("PlantBot Backend is ready!")
     logger.info(f"   Serial: {'Online' if connected else 'Offline'}")
@@ -139,7 +147,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes, fan_routes, led_routes, gallery_routes
+from backend.app.api import sensor_routes, pump_routes, camera_routes, system_routes, fan_routes, led_routes, gallery_routes, notification_routes
 
 # ─── Include Routers ─────────────────────────────────────────
 app.include_router(sensor_routes.router)
@@ -149,6 +157,7 @@ app.include_router(led_routes.router)
 app.include_router(camera_routes.router)
 app.include_router(system_routes.router)
 app.include_router(gallery_routes.router)
+app.include_router(notification_routes.router)
 
 
 # ─── Root Endpoint ───────────────────────────────────────────

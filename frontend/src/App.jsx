@@ -27,6 +27,7 @@ import { SafeModeBanner } from './components/common/SafeModeBanner';
 import { CalendarPanel } from './components/Dashboard/CalendarPanel';
 import { SystemLogs } from './components/Dashboard/SystemLogs';
 import { NewBatchPanel } from './components/Settings/NewBatchPanel';
+import AlertNotification from './components/common/AlertNotification';
 
 import { getExportUrl, fetchAutoMode, updateAutoMode, updatePreset } from './api/client';
 import './App.css';
@@ -311,6 +312,7 @@ export default function App() {
   // ─── Render ───────────────────────────────────
   return (
     <div className="app-layout">
+      <AlertNotification />
       {/* Header */}
       <header className="app-header">
         <div className="app-header__logo">
