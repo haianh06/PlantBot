@@ -169,3 +169,5 @@ data/boychok_dataset
 *.log
 *.err
 .obsidian/
+
+./backend/data/diseased_images
